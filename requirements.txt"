@@ -1,7 +1,4 @@
-pandas
-numpy
-scikit-learn
-xgboost
-pyautogen
 streamlit
+pyautogen
+
 
