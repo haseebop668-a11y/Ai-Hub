@@ -12,7 +12,10 @@ void main() {
     expect(find.text('MINDCORE'), findsOneWidget);
     expect(find.text('SYSTEM OVERVIEW'), findsOneWidget);
     expect(find.text('NOT LOADED'), findsOneWidget);
-    expect(find.text('Prototype build: UI is active; local inference and Android automation are not yet connected.'), findsOneWidget);
+    final prototypeNote = find.text('Prototype build: UI is active; local inference and Android automation are not yet connected.');
+    await tester.ensureVisible(prototypeNote);
+    await tester.pumpAndSettle();
+    expect(prototypeNote, findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
