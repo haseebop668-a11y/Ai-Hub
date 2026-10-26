@@ -48,7 +48,6 @@ class _DashboardState extends State<Dashboard> {
 
   @override
   Widget build(BuildContext context) {
-    final titles = ['COMMAND CENTER', 'LOCAL CHAT', 'APP CONTROL', 'MODEL BAY', 'PRIVACY'];
     return Scaffold(
       appBar: AppBar(
         titleSpacing: 20,
@@ -168,7 +167,7 @@ class _DashboardState extends State<Dashboard> {
     const SizedBox(height: 12),
     const Text('Nothing leaves by default.', style: TextStyle(fontSize: 25, fontWeight: FontWeight.w700)),
     const SizedBox(height: 8),
-    SwitchListTile(value: offline, onChanged: (v) => setState(() => offline = v), activeColor: accent, contentPadding: EdgeInsets.zero, title: const Text('Strict offline mode'), subtitle: const Text('UI preference only; network access is not implemented in this prototype.', style: TextStyle(color: muted, fontSize: 11))),
+    SwitchListTile(value: offline, onChanged: (v) => setState(() => offline = v), activeThumbColor: accent, contentPadding: EdgeInsets.zero, title: const Text('Strict offline mode'), subtitle: const Text('UI preference only; network access is not implemented in this prototype.', style: TextStyle(color: muted, fontSize: 11))),
     const Divider(color: line),
     _operation(Icons.lock_outline, 'Encrypted local history', 'Not implemented yet', () => _notice('Encrypted storage is planned; do not store sensitive data in this prototype.')),
     _operation(Icons.timer_outlined, '24-hour retention', 'Not implemented yet', () => _notice('Retention cleanup is planned for the storage integration phase.')),
