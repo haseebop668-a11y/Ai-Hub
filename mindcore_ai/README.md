@@ -11,6 +11,12 @@ Tactical, strict-offline Android assistant prototype built with Flutter. This di
 ## Build APK with GitHub Actions
 Open the repository Actions tab and run **Build MindCore AI Android APK** (or push changes under mindcore_ai/). The workflow scaffolds the Android host with Flutter, resolves dependencies and builds a debug APK artifact.
 
+## Automated validation
+
+The GitHub Actions workflow runs strict Dart analysis, widget tests, and a debug APK build. The widget suite checks dashboard rendering, navigation across all five sections, chat input/clear behavior, the Add App prototype notice, the offline preference toggle, and smoke rendering at 320×640, 360×800 and 412×915 logical pixels. APK verification checks that the output exists, passes ZIP integrity validation, and prints a SHA-256 checksum.
+
+These are source/CI tests, not a physical-device installation test. Before daily use, install the debug APK on the target phone and check launch, back navigation, permissions, screen rotation/resize and battery behavior. Since the local LLM, Accessibility executor, offline speech, encrypted storage and retention cleanup are not connected, those capabilities are not validated or available in this prototype.
+
 ## Planned integrations
 1. Native local LLM runtime (single runtime first; model imported locally).
 2. User-enabled AccessibilityService and package allowlist.
