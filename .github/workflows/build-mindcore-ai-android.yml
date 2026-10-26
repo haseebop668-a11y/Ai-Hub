@@ -1,0 +1,55 @@
+name: Build MindCore AI Android APK
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'mindcore_ai/**'
+      - '.github/workflows/build-mindcore-ai-android.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Generate Android host project
+        run: flutter create --platforms=android --org com.mindcore --project-name mindcore_ai /tmp/mindcore_host
+
+      - name: Overlay MindCore UI source
+        run: |
+          cp mindcore_ai/pubspec.yaml /tmp/mindcore_host/pubspec.yaml
+          rm -rf /tmp/mindcore_host/lib
+          cp -R mindcore_ai/lib /tmp/mindcore_host/lib
+
+      - name: Resolve dependencies
+        working-directory: /tmp/mindcore_host
+        run: flutter pub get
+
+      - name: Analyze Flutter code
+        working-directory: /tmp/mindcore_host
+        run: flutter analyze
+
+      - name: Build debug APK
+        working-directory: /tmp/mindcore_host
+        run: flutter build apk --debug
+
+      - name: Verify APK
+        run: test -s /tmp/mindcore_host/build/app/outputs/flutter-apk/app-debug.apk
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: mindcore-ai-debug-apk
+          path: /tmp/mindcore_host/build/app/outputs/flutter-apk/app-debug.apk
+          if-no-files-found: error
