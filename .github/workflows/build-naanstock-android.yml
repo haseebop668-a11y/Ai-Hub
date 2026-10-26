@@ -1,0 +1,33 @@
+name: Build NaanStock Android APK
+on:
+  push:
+    paths:
+      - 'naanstock/**'
+      - '.github/workflows/build-naanstock-android.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build-debug-apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.7'
+      - name: Build debug APK
+        working-directory: naanstock
+        run: gradle --no-daemon --stacktrace assembleDebug
+      - name: Verify APK exists
+        run: test -s naanstock/app/build/outputs/apk/debug/app-debug.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: naanstock-debug-apk
+          path: naanstock/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 14
