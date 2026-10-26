@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import '../lib/main.dart';
+import 'package:mindcore_ai/main.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
