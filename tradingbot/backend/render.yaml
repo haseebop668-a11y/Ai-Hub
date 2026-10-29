@@ -11,7 +11,7 @@ services:
       - key: PYTHON_VERSION
         value: 3.12.7
       - key: DATABASE_URL
-        sync: false
+        value: sqlite:///./tx-ai.db
       - key: MARKET_DATA_PROVIDER
         value: coinbase
       - key: BOT_API_TOKEN
