@@ -15,7 +15,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import DateTime, Float, Integer, String, create_engine, select
 from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column, sessionmaker
 
-APP_VERSION = "0.2.0"
+APP_VERSION = "0.3.0"
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./tradingbot.db")
 if DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql+psycopg://", 1)
@@ -52,7 +52,7 @@ class Position(Base):
 
 Base.metadata.create_all(engine)
 
-app = FastAPI(title="NoirTrade API", version=APP_VERSION, description="Live public market data where available; all orders remain paper-only. No live broker execution adapter is enabled.")
+app = FastAPI(title="TX AI Market API", version=APP_VERSION, description="Public market data and paper-order ledger. Live broker execution is not enabled.")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["GET", "POST", "OPTIONS"], allow_headers=["*"])
 
 
@@ -156,8 +156,9 @@ def portfolio_metrics(db: Session) -> dict:
     unrealized = 0.0
     for position in db.scalars(select(Position)).all():
         if position.quantity > 1e-9:
+            spot = coinbase_quote(position.symbol)
             quote = coinbase_candles(position.symbol, 1)
-            mark = quote[-1]["close"] if quote else demo_candles(position.symbol, 1)[0]["close"]
+            mark = spot["price"] if spot else (quote[-1]["close"] if quote else demo_candles(position.symbol, 1)[0]["close"])
             unrealized += (mark - position.average_entry) * position.quantity
     return {"starting_equity": 10000.0, "realized_pnl": round(realized, 2),
             "unrealized_pnl": round(unrealized, 2),
@@ -182,7 +183,7 @@ def coinbase_candles(symbol: str, limit: int) -> list[dict] | None:
         return None
     count = max(1, min(limit, 200))
     url = f"https://api.exchange.coinbase.com/products/{symbol}/candles?granularity=3600"
-    request = urllib.request.Request(url, headers={"Accept": "application/json", "User-Agent": "NoirTrade/0.2.0"})
+    request = urllib.request.Request(url, headers={"Accept": "application/json", "User-Agent": "TX-AI/0.3.0"})
     try:
         with urllib.request.urlopen(request, timeout=5) as response:
             rows = json.loads(response.read().decode("utf-8"))
@@ -196,6 +197,48 @@ def coinbase_candles(symbol: str, limit: int) -> list[dict] | None:
         return candles or None
     except (urllib.error.URLError, TimeoutError, ValueError, TypeError, KeyError):
         return None
+
+
+def coinbase_quote(symbol: str) -> dict | None:
+    """Retrieve the latest public Coinbase Exchange ticker; no user token is used."""
+    if os.getenv("MARKET_DATA_PROVIDER", "coinbase").lower() == "demo":
+        return None
+    if symbol not in {"BTC-USD", "ETH-USD", "SOL-USD"}:
+        return None
+    request = urllib.request.Request(
+        f"https://api.exchange.coinbase.com/products/{symbol}/ticker",
+        headers={"Accept": "application/json", "User-Agent": "TX-AI/0.3.0"},
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=5) as response:
+            payload = json.loads(response.read().decode("utf-8"))
+        price = float(payload["price"])
+        if price <= 0:
+            return None
+        return {
+            "symbol": symbol,
+            "price": price,
+            "bid": float(payload["bid"]) if payload.get("bid") else None,
+            "ask": float(payload["ask"]) if payload.get("ask") else None,
+            "volume_24h": float(payload["volume"]) if payload.get("volume") else None,
+            "timestamp": payload.get("time"),
+        }
+    except (urllib.error.URLError, TimeoutError, ValueError, TypeError, KeyError):
+        return None
+
+
+@app.get("/api/market/quote")
+def market_quote(symbol: str = "BTC-USD"):
+    normalized = symbol.upper().strip()
+    if normalized not in {"BTC-USD", "ETH-USD", "SOL-USD"}:
+        raise HTTPException(status_code=422, detail="Supported symbols: BTC-USD, ETH-USD, SOL-USD")
+    quote = coinbase_quote(normalized)
+    if quote:
+        return {**quote, "status": "LIVE", "source": "COINBASE LIVE · PUBLIC TICKER"}
+    last = demo_candles(normalized, 1)[0]["close"]
+    return {"symbol": normalized, "price": last, "bid": None, "ask": None,
+            "volume_24h": None, "timestamp": datetime.now(timezone.utc).isoformat(),
+            "status": "DEMO", "source": "DEMO FALLBACK · NOT LIVE"}
 
 
 @app.get("/api/candles")
@@ -226,10 +269,11 @@ def trades(limit: int = 50, db: Session = Depends(db_session)):
 
 @app.post("/api/paper-orders")
 def place_paper_order(order: PaperOrder, _: bool = Depends(require_control_token), db: Session = Depends(db_session)):
-    # Uses a public Coinbase quote when available, otherwise an explicit demo fallback. Never routes to an exchange.
+    # Records a simulated paper fill at a public quote when available. Never routes orders to an exchange.
+    spot = coinbase_quote(order.symbol)
     quote = coinbase_candles(order.symbol, 1)
     candle = quote[-1] if quote else demo_candles(order.symbol, 1)[0]
-    price = candle["close"]
+    price = spot["price"] if spot else candle["close"]
     position = db.scalar(select(Position).where(Position.symbol == order.symbol))
     if position is None:
         position = Position(symbol=order.symbol, quantity=0, average_entry=0)
