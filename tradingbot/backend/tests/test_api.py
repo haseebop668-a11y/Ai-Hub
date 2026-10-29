@@ -1,4 +1,5 @@
 import os
+import sys
 from pathlib import Path
 
 import pytest
@@ -8,6 +9,7 @@ from fastapi.testclient import TestClient
 db_file = Path(__file__).parent / "test_tradingbot.db"
 os.environ["DATABASE_URL"] = f"sqlite:///{db_file}"
 os.environ.pop("BOT_API_TOKEN", None)
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import main  # noqa: E402
 
