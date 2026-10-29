@@ -1,11 +1,13 @@
-# Ai-Hub Paper Trading Backend
+# TX AI Market Backend
 
 This is an isolated prototype under `tradingbot/`; it does not modify the existing NaanStock or MindCore modules.
 
 ## Current behavior and important limits
 
-- FastAPI API: health, bot status, demo candlesticks, paper positions/trades, paper orders, and research report generation.
-- **Market data is synthetic demo data.** No exchange or broker is connected; no real order can be placed.
+- FastAPI API: health, bot status, ticker quotes, candles, paper positions/trades, paper orders, and research report generation.
+- `/api/market/quote` requests the public Coinbase Exchange ticker for BTC-USD, ETH-USD, and SOL-USD. If the exchange is unavailable, the endpoint returns a demo value with `status=DEMO` and `source=DEMO FALLBACK · NOT LIVE`.
+- `/api/candles` requests public Coinbase hourly candles with the same explicit demo fallback. No Coinbase account token is needed for public market data.
+- TX AI embeds the official TradingView hosted chart widget, which gets chart data directly from TradingView; exchange-level real-time access can vary by symbol/venue.
 - Paper orders are persisted using SQLAlchemy. Local development defaults to SQLite. For hosted persistence, configure `DATABASE_URL` to a PostgreSQL URL. A free Render PostgreSQL database currently expires after 30 days, and free web services have ephemeral filesystems and sleep after 15 minutes idle. Do not treat a free tier as guaranteed durable or always-on.
 - GitHub research report writes are optional and require `GITHUB_RESEARCH_TOKEN` with Contents write access and `GITHUB_RESEARCH_REPO`. Keep the token in hosting secrets, never in the repo or APK. Use a fine-grained token restricted to this repository.
 - Set `BOT_API_TOKEN` in hosting. Write endpoints require `Authorization: Bearer <token>` when it is configured.
@@ -34,7 +36,7 @@ GitHub Actions workflow **Build Paper Trading Bot** runs backend tests and build
 
 ## Next phases
 
-1. Add an explicitly selected live market-data adapter with retries, timestamps, and stale-data detection.
+1. Keep the public ticker clearly marked as LIVE or DEMO, monitor rate limits/staleness, and add a true WebSocket feed only if the polling latency is insufficient.
 2. Add strategy engine, backtests with fees/slippage, position sizing, daily loss caps, and deterministic replay tests.
 3. Configure persistent hosted PostgreSQL and verify retention across restart/redeploy.
 4. Configure a protected, stable Android signing key and publish versioned Release assets.
