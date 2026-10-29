@@ -41,3 +41,13 @@ GitHub Actions workflow **Build Paper Trading Bot** runs backend tests and build
 3. Configure persistent hosted PostgreSQL and verify retention across restart/redeploy.
 4. Configure a protected, stable Android signing key and publish versioned Release assets.
 5. Only after separate review and explicit user approval, consider a live broker adapter; keep paper mode as default and fail closed.
+
+
+## Alternate deployment providers
+
+The app's provider tiles are dashboard shortcuts, not a completed OAuth connection. Use `tradingbot/backend` as the root directory:
+- Build: `pip install -r requirements.txt`
+- Start: `uvicorn main:app --host 0.0.0.0 --port $PORT`
+- Health check: `/health`
+
+Koyeb is the recommended first attempt for a Git-based FastAPI deployment. Railway is an alternative (check current plan/usage). Google Cloud Run suits containerized services but may require billing setup. Hugging Face Docker Spaces can host demos but may sleep and are not a durable always-on backend. Streamlit Community Cloud is intended for Streamlit apps, not this FastAPI/WebSocket API. Verify the deployed URL with `/health` before entering it in TX AI.
