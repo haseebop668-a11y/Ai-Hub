@@ -120,7 +120,7 @@ def write_research_to_github(report: dict) -> dict:
 
 @app.get("/")
 def root():
-    return {"service": "NoirTrade API", "version": APP_VERSION, "mode": "paper-only", "docs": "/docs"}
+    return {"service": "TX AI Market API", "version": APP_VERSION, "mode": "paper-only", "docs": "/docs"}
 
 
 @app.get("/health")
