@@ -44,6 +44,18 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.7'
+      - name: Validate embedded TX AI JavaScript
+        run: |
+          python3 - <<'PY'
+          import re
+          from pathlib import Path
+          html = Path("tradingbot/mobile/app/src/main/assets/index.html").read_text()
+          scripts = re.findall(r"<script>(.*?)</script>", html, flags=re.S)
+          if not scripts:
+              raise SystemExit("No inline application script found")
+          Path("/tmp/tx-ai-ui.js").write_text("\n".join(scripts))
+          PY
+          node --check /tmp/tx-ai-ui.js
       - name: Build APK
         working-directory: tradingbot/mobile
         run: gradle --no-daemon --stacktrace assembleDebug
