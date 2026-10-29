@@ -63,7 +63,7 @@ def _signals(candles: list[dict[str, Any]], strategy_id: str) -> list[int]:
             fast = sum(closes[i - 7:i + 1]) / 8
             slow = sum(closes[i - 20:i + 1]) / 21
             prev_fast = sum(closes[i - 8:i]) / 8
-            prev_slow = sum(closes[i - 21:i - 1]) / 21
+            prev_slow = sum(closes[i - 21:i]) / 21
             if prev_fast <= prev_slow and fast > slow:
                 signals[i] = 1
             elif prev_fast >= prev_slow and fast < slow:
@@ -93,6 +93,39 @@ def _signals(candles: list[dict[str, Any]], strategy_id: str) -> list[int]:
     else:
         raise ValueError(f"Unknown strategy: {strategy_id}")
     return signals
+
+
+
+def _current_action(candles: list[dict[str, Any]], strategy_id: str) -> str:
+    closes = [float(c["close"]) for c in candles]
+    i = len(closes) - 1
+    if strategy_id == "sma_crossover":
+        if len(closes) < 21:
+            return "WAIT"
+        fast = sum(closes[i - 7:i + 1]) / 8
+        slow = sum(closes[i - 20:i + 1]) / 21
+        return "BUY" if fast > slow else "SELL" if fast < slow else "WAIT"
+    if strategy_id == "ema_trend":
+        fast, slow = _ema(closes, 9), _ema(closes, 21)
+        if fast[i] > slow[i] and closes[i] > closes[i - 1]:
+            return "BUY"
+        if fast[i] < slow[i] and closes[i] < closes[i - 1]:
+            return "SELL"
+        return "WAIT"
+    if strategy_id == "rsi_reversion":
+        rsi = _rsi(closes)
+        if len(rsi) > 15 and rsi[i - 1] < 30 <= rsi[i]:
+            return "BUY"
+        if rsi[i] >= 70:
+            return "SELL"
+        return "WAIT"
+    if strategy_id == "breakout":
+        if len(candles) < 21:
+            return "WAIT"
+        prior_high = max(float(candles[j]["high"]) for j in range(i - 20, i))
+        prior_low = min(float(candles[j]["low"]) for j in range(i - 20, i))
+        return "BUY" if closes[i] > prior_high else "SELL" if closes[i] < prior_low else "WAIT"
+    raise ValueError(f"Unknown strategy: {strategy_id}")
 
 
 def backtest_strategy(candles: list[dict[str, Any]], strategy_id: str,
@@ -141,8 +174,7 @@ def backtest_strategy(candles: list[dict[str, Any]], strategy_id: str,
     variance = sum((r - mean) ** 2 for r in daily_returns) / max(1, len(daily_returns) - 1)
     volatility = sqrt(variance) * sqrt(24 * 365) * 100.0
     name = next(item["name"] for item in STRATEGIES if item["id"] == strategy_id)
-    latest_signal = signals[-1]
-    action = "BUY" if latest_signal == 1 else "SELL" if latest_signal == -1 else "WAIT"
+    action = _current_action(candles, strategy_id)
     return {
         "strategy_id": strategy_id, "strategy": name, "action": action,
         "net_return_pct": round(net_return, 3), "max_drawdown_pct": round(max_drawdown * 100, 3),
