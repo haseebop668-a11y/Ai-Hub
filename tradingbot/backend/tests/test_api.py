@@ -61,6 +61,31 @@ def test_candles_are_valid_ohlc_and_explicitly_demo():
         assert candle["low"] <= min(candle["open"], candle["close"])
 
 
+
+def test_strategy_agent_ranks_four_candidates_without_live_trading():
+    response = client.get("/api/agent/strategy?symbol=BTC-USD&limit=80")
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["agent"] == "TX AI Strategy Agent"
+    assert payload["live_trading_enabled"] is False
+    assert len(payload["strategies"]) == 4
+    assert payload["top_strategy"]["strategy_id"] in {
+        "sma_crossover", "ema_trend", "rsi_reversion", "breakout"
+    }
+    assert payload["source"] == "DEMO FALLBACK · NOT LIVE"
+
+
+def test_strategy_scan_rejects_unsupported_symbol():
+    response = client.get("/api/strategies/scan?symbol=FAKE-USD")
+    assert response.status_code == 422
+
+
+def test_strategy_backtest_endpoint_requires_valid_strategy():
+    response = client.post("/api/strategies/backtest",
+                           json={"symbol": "BTC-USD", "strategy_id": "invalid"})
+    assert response.status_code == 422
+
+
 def test_paper_buy_persists_position_and_trade():
     result = client.post("/api/paper-orders", json={"symbol": "BTC-USD", "side": "BUY", "quantity": 0.1})
     assert result.status_code == 200
