@@ -25,6 +25,19 @@ public class MainActivity extends Activity {
         }
 
         @JavascriptInterface
+        public void openProvider(String url) {
+            if (url == null || !(url.equals("https://app.koyeb.com/")
+                    || url.equals("https://railway.com/new")
+                    || url.equals("https://console.cloud.google.com/run")
+                    || url.equals("https://huggingface.co/new-space")
+                    || url.equals("https://dashboard.render.com/"))) return;
+            runOnUiThread(() -> {
+                try { startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(url))); }
+                catch (Exception ignored) { Toast.makeText(MainActivity.this, "Could not open provider", Toast.LENGTH_SHORT).show(); }
+            });
+        }
+
+        @JavascriptInterface
         public void openUrl(String url) {
             if (url == null || !(url.startsWith("https://github.com/haseebop668-a11y/Ai-Hub/releases/")
                     || url.startsWith("https://api.github.com/repos/haseebop668-a11y/Ai-Hub/"))) return;
