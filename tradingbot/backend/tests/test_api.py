@@ -39,6 +39,19 @@ def test_live_quote_endpoint_labels_demo_fallback():
     assert payload["price"] > 0
 
 
+def test_quote_reports_live_when_public_ticker_is_available(monkeypatch):
+    monkeypatch.setattr(main, "coinbase_quote", lambda symbol: {
+        "symbol": symbol, "price": 65000.25, "bid": 65000.0, "ask": 65000.5,
+        "volume_24h": 1234.5, "timestamp": "2026-10-29T10:00:00Z",
+    })
+    response = client.get("/api/market/quote?symbol=BTC-USD")
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["status"] == "LIVE"
+    assert payload["source"] == "COINBASE LIVE · PUBLIC TICKER"
+    assert payload["price"] == pytest.approx(65000.25)
+
+
 def test_candles_are_valid_ohlc_and_explicitly_demo():
     payload = client.get("/api/candles?symbol=BTC-USD&limit=20").json()
     assert payload["source"] == "DEMO FALLBACK · NOT LIVE"
