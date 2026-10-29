@@ -1,15 +1,18 @@
 from __future__ import annotations
 
+import asyncio
 import base64
 import json
 import os
 import secrets
 import urllib.error
 import urllib.request
+
+import websockets
 from datetime import datetime, timezone
 from typing import Literal
 
-from fastapi import Depends, FastAPI, Header, HTTPException
+from fastapi import Depends, FastAPI, Header, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from sqlalchemy import DateTime, Float, Integer, String, create_engine, select
@@ -225,6 +228,64 @@ def coinbase_quote(symbol: str) -> dict | None:
         }
     except (urllib.error.URLError, TimeoutError, ValueError, TypeError, KeyError):
         return None
+
+
+@app.websocket("/api/market/stream/{symbol}")
+async def market_stream(websocket: WebSocket, symbol: str):
+    """Relay the public Coinbase ticker so connected TX AI clients receive live ticks."""
+    normalized = symbol.upper().strip()
+    if normalized not in {"BTC-USD", "ETH-USD", "SOL-USD"}:
+        await websocket.close(code=1008, reason="Unsupported symbol")
+        return
+    await websocket.accept()
+    if os.getenv("MARKET_DATA_PROVIDER", "coinbase").lower() == "demo":
+        await websocket.send_json({"symbol": normalized, "status": "DEMO",
+                                   "source": "DEMO FALLBACK · NOT LIVE",
+                                   "price": demo_candles(normalized, 1)[0]["close"],
+                                   "timestamp": datetime.now(timezone.utc).isoformat()})
+        await websocket.close(code=1000)
+        return
+    try:
+        async with websockets.connect(
+            "wss://ws-feed.exchange.coinbase.com",
+            open_timeout=6,
+            close_timeout=3,
+            ping_interval=20,
+            ping_timeout=20,
+        ) as upstream:
+            await upstream.send(json.dumps({
+                "type": "subscribe",
+                "product_ids": [normalized],
+                "channels": ["ticker"],
+            }))
+            async for raw in upstream:
+                try:
+                    message = json.loads(raw)
+                except (TypeError, ValueError):
+                    continue
+                if message.get("type") != "ticker" or not message.get("price"):
+                    continue
+                await websocket.send_json({
+                    "symbol": normalized,
+                    "status": "LIVE",
+                    "source": "COINBASE LIVE · WEBSOCKET",
+                    "price": float(message["price"]),
+                    "bid": float(message["best_bid"]) if message.get("best_bid") else None,
+                    "ask": float(message["best_ask"]) if message.get("best_ask") else None,
+                    "timestamp": message.get("time") or datetime.now(timezone.utc).isoformat(),
+                })
+    except WebSocketDisconnect:
+        return
+    except Exception:
+        try:
+            await websocket.send_json({"symbol": normalized, "status": "UNAVAILABLE",
+                                       "source": "LIVE STREAM UNAVAILABLE · TRYING REST"})
+        except Exception:
+            pass
+        try:
+            await websocket.close(code=1011)
+        except Exception:
+            pass
 
 
 @app.get("/api/market/quote")
