@@ -15,7 +15,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import DateTime, Float, Integer, String, create_engine, select
 from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column, sessionmaker
 
-APP_VERSION = "0.1.0"
+APP_VERSION = "0.2.0"
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./tradingbot.db")
 if DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql+psycopg://", 1)
@@ -52,7 +52,7 @@ class Position(Base):
 
 Base.metadata.create_all(engine)
 
-app = FastAPI(title="Ai-Hub Paper Trading API", version=APP_VERSION, description="Paper trading only. No live broker adapter is implemented.")
+app = FastAPI(title="NoirTrade API", version=APP_VERSION, description="Live public market data where available; all orders remain paper-only. No live broker execution adapter is enabled.")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["GET", "POST", "OPTIONS"], allow_headers=["*"])
 
 
@@ -120,7 +120,7 @@ def write_research_to_github(report: dict) -> dict:
 
 @app.get("/")
 def root():
-    return {"service": "Ai-Hub Paper Trading API", "version": APP_VERSION, "mode": "paper-only", "docs": "/docs"}
+    return {"service": "NoirTrade API", "version": APP_VERSION, "mode": "paper-only", "docs": "/docs"}
 
 
 @app.get("/health")
@@ -132,7 +132,7 @@ def health():
     except Exception:
         database_ok = False
     return {"status": "ok" if database_ok else "degraded", "database": database_ok,
-            "mode": "paper-only", "market_data": "demo-only", "version": APP_VERSION}
+            "mode": "paper-only", "market_data": "coinbase-public-with-demo-fallback", "version": APP_VERSION}
 
 
 def portfolio_metrics(db: Session) -> dict:
@@ -168,15 +168,44 @@ def status(db: Session = Depends(db_session)):
     positions = db.scalars(select(Position)).all()
     trades = db.scalars(select(Trade)).all()
     return {"bot_status": "IDLE", "mode": "PAPER", "live_trading_enabled": False,
-            "market_data": "DEMO", "open_positions": len([p for p in positions if abs(p.quantity) > 1e-9]),
+            "market_data": "COINBASE_PUBLIC_WHEN_AVAILABLE", "open_positions": len([p for p in positions if abs(p.quantity) > 1e-9]),
             "total_paper_trades": len(trades), "last_scan": None, **portfolio_metrics(db)}
+
+
+def coinbase_candles(symbol: str, limit: int) -> list[dict] | None:
+    """Fetch public hourly candles from Coinbase Exchange; no API key is needed."""
+    if os.getenv("MARKET_DATA_PROVIDER", "coinbase").lower() == "demo":
+        return None
+    products = {"BTC-USD", "ETH-USD", "SOL-USD"}
+    if symbol not in products:
+        return None
+    count = max(1, min(limit, 200))
+    url = f"https://api.exchange.coinbase.com/products/{symbol}/candles?granularity=3600"
+    request = urllib.request.Request(url, headers={"Accept": "application/json", "User-Agent": "NoirTrade/0.2.0"})
+    try:
+        with urllib.request.urlopen(request, timeout=5) as response:
+            rows = json.loads(response.read().decode("utf-8"))
+        candles = []
+        for row in sorted(rows, key=lambda item: item[0])[-count:]:
+            if not isinstance(row, list) or len(row) < 6:
+                continue
+            timestamp, low, high, open_price, close, volume = row[:6]
+            candles.append({"time": int(timestamp), "open": float(open_price), "high": float(high),
+                            "low": float(low), "close": float(close), "volume": float(volume)})
+        return candles or None
+    except (urllib.error.URLError, TimeoutError, ValueError, TypeError, KeyError):
+        return None
 
 
 @app.get("/api/candles")
 def candles(symbol: str = "BTC-USD", limit: int = 80):
     if not symbol or len(symbol) > 20 or not all(c.isalnum() or c == "-" for c in symbol.upper()):
         raise HTTPException(status_code=422, detail="Invalid symbol")
-    return {"symbol": symbol.upper(), "source": "DEMO_NOT_LIVE", "candles": demo_candles(symbol.upper(), limit)}
+    normalized = symbol.upper()
+    live = coinbase_candles(normalized, limit)
+    if live:
+        return {"symbol": normalized, "source": "COINBASE LIVE · HOURLY", "candles": live}
+    return {"symbol": normalized, "source": "DEMO FALLBACK · NOT LIVE", "candles": demo_candles(normalized, limit)}
 
 
 @app.get("/api/positions")
