@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: tx-ai-market-api
+    runtime: python
+    plan: free
+    rootDir: tradingbot/backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.7
+      - key: DATABASE_URL
+        value: sqlite:///./tx-ai.db
+      - key: MARKET_DATA_PROVIDER
+        value: coinbase
+      - key: BOT_API_TOKEN
+        generateValue: true
+      - key: GITHUB_RESEARCH_REPO
+        value: haseebop668-a11y/Ai-Hub
+      - key: GITHUB_RESEARCH_TOKEN
+        sync: false

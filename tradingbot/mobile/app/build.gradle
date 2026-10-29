@@ -1,0 +1,46 @@
+plugins { id 'com.android.application' }
+
+def appVersionCode = project.hasProperty('appVersionCode') ? project.property('appVersionCode').toString().toInteger() : 3
+def appVersionName = project.hasProperty('appVersionName') ? project.property('appVersionName').toString() : '0.3.0'
+
+android {
+    namespace 'com.aihub.tradingbot'
+    compileSdk 35
+    defaultConfig {
+        applicationId 'com.aihub.tradingbot'
+        minSdk 23
+        targetSdk 28
+        versionCode appVersionCode
+        versionName appVersionName
+    }
+
+    // Release builds are signed only when a protected keystore is supplied by CI.
+    // Never commit keystores or passwords to this repository.
+    def releaseStoreFile = System.getenv('ANDROID_KEYSTORE_PATH')
+    def releaseStorePassword = System.getenv('ANDROID_KEYSTORE_PASSWORD')
+    def releaseKeyAlias = System.getenv('ANDROID_KEY_ALIAS')
+    def releaseKeyPassword = System.getenv('ANDROID_KEY_PASSWORD')
+
+    if (releaseStoreFile && releaseStorePassword && releaseKeyAlias && releaseKeyPassword) {
+        signingConfigs {
+            release {
+                storeFile file(releaseStoreFile)
+                storePassword releaseStorePassword
+                keyAlias releaseKeyAlias
+                keyPassword releaseKeyPassword
+            }
+        }
+        buildTypes {
+            release {
+                signingConfig signingConfigs.release
+                minifyEnabled false
+            }
+        }
+    } else {
+        buildTypes {
+            release {
+                minifyEnabled false
+            }
+        }
+    }
+}
