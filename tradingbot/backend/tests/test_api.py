@@ -32,7 +32,7 @@ def test_health_reports_paper_and_demo_only():
 
 def test_candles_are_valid_ohlc_and_explicitly_demo():
     payload = client.get("/api/candles?symbol=BTC-USD&limit=20").json()
-    assert payload["source"] == "DEMO_NOT_LIVE"
+    assert payload["source"] == "DEMO FALLBACK · NOT LIVE"
     assert len(payload["candles"]) == 20
     for candle in payload["candles"]:
         assert candle["high"] >= max(candle["open"], candle["close"])
