@@ -1,5 +1,8 @@
 plugins { id 'com.android.application' }
 
+def appVersionCode = project.hasProperty('appVersionCode') ? project.property('appVersionCode').toString().toInteger() : 1
+def appVersionName = project.hasProperty('appVersionName') ? project.property('appVersionName').toString() : '0.1.0'
+
 android {
     namespace 'com.aihub.tradingbot'
     compileSdk 35
@@ -7,8 +10,8 @@ android {
         applicationId 'com.aihub.tradingbot'
         minSdk 23
         targetSdk 28
-        versionCode (project.findProperty('versionCode') ?: '1').toString().toInteger()
-        versionName (project.findProperty('versionName') ?: '0.1.0').toString()
+        versionCode appVersionCode
+        versionName appVersionName
     }
 
     // Release builds are signed only when a protected keystore is supplied by CI.
