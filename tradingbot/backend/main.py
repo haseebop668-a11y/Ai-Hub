@@ -18,6 +18,8 @@ from pydantic import BaseModel, Field
 from sqlalchemy import DateTime, Float, Integer, String, create_engine, select
 from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column, sessionmaker
 
+from strategy_engine import STRATEGIES, backtest_strategy, run_strategy_lab
+
 APP_VERSION = "0.3.0"
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./tradingbot.db")
 if DATABASE_URL.startswith("postgres://"):
@@ -357,6 +359,63 @@ def place_paper_order(order: PaperOrder, _: bool = Depends(require_control_token
     db.refresh(trade)
     return {"trade_id": trade.id, "symbol": order.symbol, "side": order.side, "quantity": order.quantity,
             "price": price, "status": "PAPER_FILLED", "live_order_sent": False}
+
+
+
+@app.get("/api/strategies")
+def list_strategies():
+    return {"strategies": STRATEGIES, "live_trading_enabled": False}
+
+
+@app.get("/api/strategies/scan")
+def scan_strategies(symbol: str = "BTC-USD", limit: int = 120):
+    normalized = symbol.upper().strip()
+    if normalized not in {"BTC-USD", "ETH-USD", "SOL-USD"}:
+        raise HTTPException(status_code=422, detail="Supported symbols: BTC-USD, ETH-USD, SOL-USD")
+    rows = coinbase_candles(normalized, max(25, min(limit, 200)))
+    source = "COINBASE LIVE · HOURLY" if rows else "DEMO FALLBACK · NOT LIVE"
+    rows = rows or demo_candles(normalized, max(25, min(limit, 200)))
+    enriched = [{**row, "symbol": normalized, "source": source} for row in rows]
+    try:
+        result = run_strategy_lab(enriched)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    result["source"] = source
+    result["symbol"] = normalized
+    return result
+
+
+@app.post("/api/strategies/backtest")
+def backtest_custom_strategy(payload: dict, _: bool = Depends(require_control_token)):
+    symbol = str(payload.get("symbol", "BTC-USD")).upper().strip()
+    strategy_id = str(payload.get("strategy_id", "sma_crossover"))
+    limit = max(25, min(int(payload.get("limit", 120)), 200))
+    if symbol not in {"BTC-USD", "ETH-USD", "SOL-USD"}:
+        raise HTTPException(status_code=422, detail="Supported symbols: BTC-USD, ETH-USD, SOL-USD")
+    rows = coinbase_candles(symbol, limit)
+    source = "COINBASE LIVE · HOURLY" if rows else "DEMO FALLBACK · NOT LIVE"
+    rows = rows or demo_candles(symbol, limit)
+    try:
+        result = backtest_strategy([{**row, "source": source} for row in rows], strategy_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    result.update({"symbol": symbol, "source": source, "live_trading_enabled": False})
+    return result
+
+
+@app.get("/api/agent/strategy")
+def strategy_agent(symbol: str = "BTC-USD", limit: int = 120):
+    # The first agent is intentionally deterministic and transparent; it needs no external AI key.
+    result = scan_strategies(symbol=symbol, limit=limit)
+    result["agent"] = "TX AI Strategy Agent"
+    result["agent_mode"] = "deterministic research agent (no external LLM configured)"
+    result["tasks_completed"] = [
+        "evaluated four rule-based strategy templates",
+        "ran historical paper backtests with estimated transaction costs",
+        "ranked candidates by net return then drawdown",
+        "generated an explainable paper-only recommendation"
+    ]
+    return result
 
 
 @app.post("/api/research")
