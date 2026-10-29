@@ -30,6 +30,15 @@ def test_health_reports_paper_and_demo_only():
     assert response.json()["market_data"] == "coinbase-public-with-demo-fallback"
 
 
+def test_live_quote_endpoint_labels_demo_fallback():
+    response = client.get("/api/market/quote?symbol=BTC-USD")
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["status"] == "DEMO"
+    assert payload["source"] == "DEMO FALLBACK · NOT LIVE"
+    assert payload["price"] > 0
+
+
 def test_candles_are_valid_ohlc_and_explicitly_demo():
     payload = client.get("/api/candles?symbol=BTC-USD&limit=20").json()
     assert payload["source"] == "DEMO FALLBACK · NOT LIVE"
