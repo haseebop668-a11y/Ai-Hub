@@ -37,19 +37,19 @@ public class MainActivity extends Activity {
         @JavascriptInterface
         public void downloadApk(String url) {
             if (url == null || !url.startsWith("https://github.com/haseebop668-a11y/Ai-Hub/releases/download/") || !url.toLowerCase().endsWith(".apk")) {
-                runOnUiThread(() -> Toast.makeText(MainActivity.this, "Only official NoirTrade APK releases are allowed", Toast.LENGTH_LONG).show());
+                runOnUiThread(() -> Toast.makeText(MainActivity.this, "Only official TX AI APK releases are allowed", Toast.LENGTH_LONG).show());
                 return;
             }
             runOnUiThread(() -> {
                 try {
                     DownloadManager.Request request = new DownloadManager.Request(Uri.parse(url));
-                    request.setTitle("NoirTrade update");
-                    request.setDescription("Downloading the latest NoirTrade APK. Tap the download notification to install.");
+                    request.setTitle("TX AI update");
+                    request.setDescription("Downloading the latest TX AI APK. Tap the download notification to install.");
                     request.setMimeType("application/vnd.android.package-archive");
                     request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
                     request.setAllowedOverMetered(true);
                     request.setAllowedOverRoaming(false);
-                    request.setDestinationInExternalFilesDir(MainActivity.this, Environment.DIRECTORY_DOWNLOADS, "NoirTrade-update.apk");
+                    request.setDestinationInExternalFilesDir(MainActivity.this, Environment.DIRECTORY_DOWNLOADS, "TX AI-update.apk");
                     DownloadManager manager = (DownloadManager) getSystemService(Context.DOWNLOAD_SERVICE);
                     manager.enqueue(request);
                     Toast.makeText(MainActivity.this, "Update downloading. Tap the completed download notification to install.", Toast.LENGTH_LONG).show();
