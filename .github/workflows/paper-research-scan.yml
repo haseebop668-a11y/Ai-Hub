@@ -1,0 +1,39 @@
+name: Paper Research Market Scan
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 */6 * * *'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: paper-research-scan-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  scan:
+    name: Fetch public candles and commit research report
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Run research-only scanner
+        run: python tradingbot/research/scan.py
+      - name: Commit report if successful
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add tradingbot/research/reports/*.json
+          if git diff --cached --quiet; then
+            echo "No report changes to commit."
+          else
+            git commit -m "Add scheduled paper-market research report"
+            git push
+          fi
