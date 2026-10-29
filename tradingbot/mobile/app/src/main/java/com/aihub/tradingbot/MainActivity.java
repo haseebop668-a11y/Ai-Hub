@@ -20,7 +20,8 @@ public class MainActivity extends Activity {
     public final class AndroidBridge {
         @JavascriptInterface
         public String getVersionName() {
-            return BuildConfig.VERSION_NAME;
+            try { return getPackageManager().getPackageInfo(getPackageName(), 0).versionName; }
+            catch (Exception ignored) { return "unknown"; }
         }
 
         @JavascriptInterface
