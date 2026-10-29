@@ -60,7 +60,7 @@ jobs:
           VERSION="${GITHUB_REF_NAME}"
           if [ "${GITHUB_EVENT_NAME}" = "workflow_dispatch" ]; then VERSION="${{ inputs.version }}"; fi
           VERSION_CODE="${GITHUB_RUN_NUMBER}"
-          gradle --no-daemon --stacktrace assembleRelease -PversionCode="$VERSION_CODE" -PversionName="$VERSION"
+          gradle --no-daemon --stacktrace assembleRelease -PappVersionCode="$VERSION_CODE" -PappVersionName="$VERSION"
           APK=app/build/outputs/apk/release/app-release.apk
           test -s "$APK"
           apksigner verify "$APK"
