@@ -32,3 +32,17 @@ Do not commit the keystore or passwords. The workflow `.github/workflows/release
 ## Broker connection
 
 A private broker integration is a separate feature and is not currently implemented. Coinbase's public candle endpoint requires no API token and does not authorize account access or order placement. For any future live order execution, select a specific broker and configure API credentials as server-side secrets with withdrawals disabled, explicit user opt-in, and fail-closed controls. Any future live broker adapter must use server-side secrets, explicit opt-in, and fail-closed controls; never put exchange API secrets in the APK. No broker token should be entered until a specific provider and secure server-side integration are implemented.
+
+
+## Alternative backend hosts (TX AI single-user testing)
+
+The in-app **Connect backend provider** tiles open provider dashboards. They are launch links, not OAuth integrations: authorize the repository, deploy the service, then paste its actual HTTPS URL and run **Test & connect**. TX AI must not claim a host is connected before a successful `/health` check.
+
+Recommended order:
+1. **Koyeb** — supports Python/FastAPI and Git-based deployment. Use `tradingbot/backend` as service root; build: `pip install -r requirements.txt`; start: `uvicorn main:app --host 0.0.0.0 --port $PORT`; health check: `/health`.
+2. **Railway** — similar GitHub deployment; check current plan and usage limits.
+3. **Google Cloud Run** — suitable for a containerized API; account/billing setup may be required.
+4. **Hugging Face Spaces (Docker)** — suitable for demos, but free compute may sleep and disk is not durable.
+5. **Render** — keep as fallback if the deployment issue can be diagnosed.
+
+**Streamlit Community Cloud is not recommended for this FastAPI/WebSocket backend.** It primarily hosts Streamlit apps. No host can be connected by opening a URL alone: deployment and health verification must happen in the provider dashboard. Never store hosting or exchange secrets in the APK.
