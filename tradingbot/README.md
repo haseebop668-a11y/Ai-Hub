@@ -10,7 +10,7 @@ This project lives only in `haseebop668-a11y/Ai-Hub/tradingbot/`.
 ## Safety and status
 - Paper trading only. The backend has no live broker integration.
 - Chart candles and order quotes are clearly marked as synthetic demo data, not real market prices.
-- UI shows paper positions and recent trade ledger. P&L is a placeholder and is not a verified portfolio calculation.
+- UI shows paper positions, recent trades, and average-cost realized/unrealized P&L against synthetic demo quotes; it is not a real-market valuation.
 - GitHub research file writes are opt-in through a repository-scoped token held in hosting secrets.
 - Free hosting is suitable for a prototype only; it cannot guarantee continuous execution. See `backend/README.md`.
 
