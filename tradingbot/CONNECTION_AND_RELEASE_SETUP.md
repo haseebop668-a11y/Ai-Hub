@@ -1,8 +1,8 @@
-# NoirTrade connection and APK release setup
+# TX AI connection and APK release setup
 
 ## Current verified boundary
 
-- The app is rebranded NoirTrade. The backend requests public Coinbase hourly candles for BTC-USD, ETH-USD, and SOL-USD, and falls back to explicitly labeled demo candles if unavailable. Paper orders use the latest public quote when available, but remain simulated; no exchange order is sent.
+- The app is branded TX AI. The backend requests public Coinbase hourly candles for BTC-USD, ETH-USD, and SOL-USD, and falls back to explicitly labeled demo candles if unavailable. Paper orders use the latest public quote when available, but remain simulated; no exchange order is sent.
 - A real FastAPI URL does not exist until the Render service is created and deployed. The checked-in `tradingbot/backend/render.yaml` is only a blueprint.
 - The app's update checker reads the latest GitHub Release and offers the APK download. GitHub Actions artifacts are not Releases.
 - GitHub OAuth cannot be enabled safely by adding a button alone. It needs a registered OAuth App, a callback endpoint, and server-side token exchange. Do not embed a GitHub client secret or personal access token in the APK.
@@ -28,7 +28,7 @@ The current installed debug APK may not accept an update signed by a different k
 - `ANDROID_KEY_ALIAS`
 - `ANDROID_KEY_PASSWORD`
 
-Do not commit the keystore or passwords. The workflow `.github/workflows/release-paper-trading-bot.yml` requires these secrets, runs tests, builds and verifies a signed APK, and publishes it as a GitHub Release when a `trading-v*` tag is pushed or the workflow is manually run. The same signing key must be retained for every future release. If the current phone APK uses a different debug key, uninstalling it and installing the first signed release may be necessary; this can erase app-local settings.
+Do not commit the keystore or passwords. The workflow `.github/workflows/release-paper-trading-bot.yml` requires these secrets, runs tests, builds and verifies a signed APK, and publishes it as a GitHub Release when a `txai-v*` tag is pushed or the workflow is manually run. The same signing key must be retained for every future release. If the current phone APK uses a different debug key, uninstalling it and installing the first signed release may be necessary; this can erase app-local settings.
 
 ## Broker connection
 
