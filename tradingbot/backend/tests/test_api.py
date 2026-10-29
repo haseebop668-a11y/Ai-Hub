@@ -9,6 +9,7 @@ from fastapi.testclient import TestClient
 db_file = Path(__file__).parent / "test_tradingbot.db"
 os.environ["DATABASE_URL"] = f"sqlite:///{db_file}"
 os.environ.pop("BOT_API_TOKEN", None)
+os.environ["MARKET_DATA_PROVIDER"] = "demo"
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import main  # noqa: E402
@@ -26,12 +27,12 @@ def test_health_reports_paper_and_demo_only():
     assert response.status_code == 200
     assert response.json()["database"] is True
     assert response.json()["mode"] == "paper-only"
-    assert response.json()["market_data"] == "demo-only"
+    assert response.json()["market_data"] == "coinbase-public-with-demo-fallback"
 
 
 def test_candles_are_valid_ohlc_and_explicitly_demo():
     payload = client.get("/api/candles?symbol=BTC-USD&limit=20").json()
-    assert payload["source"] == "DEMO_NOT_LIVE"
+    assert payload["source"] == "DEMO FALLBACK · NOT LIVE"
     assert len(payload["candles"]) == 20
     for candle in payload["candles"]:
         assert candle["high"] >= max(candle["open"], candle["close"])

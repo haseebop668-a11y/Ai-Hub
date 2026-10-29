@@ -1,8 +1,8 @@
-# Trading bot connection and APK release setup
+# NoirTrade connection and APK release setup
 
 ## Current verified boundary
 
-- The app's paper-order API is not a real broker adapter. Orders remain simulated and no exchange orders are sent.
+- The app is rebranded NoirTrade. The backend requests public Coinbase hourly candles for BTC-USD, ETH-USD, and SOL-USD, and falls back to explicitly labeled demo candles if unavailable. Paper orders use the latest public quote when available, but remain simulated; no exchange order is sent.
 - A real FastAPI URL does not exist until the Render service is created and deployed. The checked-in `tradingbot/backend/render.yaml` is only a blueprint.
 - The app's update checker reads the latest GitHub Release and offers the APK download. GitHub Actions artifacts are not Releases.
 - GitHub OAuth cannot be enabled safely by adding a button alone. It needs a registered OAuth App, a callback endpoint, and server-side token exchange. Do not embed a GitHub client secret or personal access token in the APK.
@@ -21,7 +21,7 @@ No live service URL can be claimed until deployment and the health endpoint have
 
 ## Stable APK updates
 
-The current installed debug APK may not accept an update signed by a different key. Before enabling repeatable in-place updates, create one Android release keystore and keep it backed up privately. Add these GitHub Actions repository secrets:
+The current installed debug APK may not accept an update signed by a different key. The in-app update button can download an official APK from the GitHub Release; Android still requires the user to confirm installation. The app must be signed with the same release key for in-place updates. Before enabling repeatable in-place updates, create one Android release keystore and keep it backed up privately. Add these GitHub Actions repository secrets:
 
 - `ANDROID_KEYSTORE_BASE64`: base64-encoded keystore bytes
 - `ANDROID_KEYSTORE_PASSWORD`
@@ -32,4 +32,4 @@ Do not commit the keystore or passwords. The workflow `.github/workflows/release
 
 ## Broker connection
 
-A broker integration is a separate feature and is not currently implemented. Start with a read-only market-data adapter and paper trading. Any future live broker adapter must use server-side secrets, explicit opt-in, and fail-closed controls; never put exchange API secrets in the APK. No broker token should be entered until a specific provider and secure server-side integration are implemented.
+A private broker integration is a separate feature and is not currently implemented. Coinbase's public candle endpoint requires no API token and does not authorize account access or order placement. For any future live order execution, select a specific broker and configure API credentials as server-side secrets with withdrawals disabled, explicit user opt-in, and fail-closed controls. Any future live broker adapter must use server-side secrets, explicit opt-in, and fail-closed controls; never put exchange API secrets in the APK. No broker token should be entered until a specific provider and secure server-side integration are implemented.
