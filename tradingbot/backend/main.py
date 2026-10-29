@@ -156,7 +156,8 @@ def portfolio_metrics(db: Session) -> dict:
     unrealized = 0.0
     for position in db.scalars(select(Position)).all():
         if position.quantity > 1e-9:
-            mark = demo_candles(position.symbol, 1)[0]["close"]
+            quote = coinbase_candles(position.symbol, 1)
+            mark = quote[-1]["close"] if quote else demo_candles(position.symbol, 1)[0]["close"]
             unrealized += (mark - position.average_entry) * position.quantity
     return {"starting_equity": 10000.0, "realized_pnl": round(realized, 2),
             "unrealized_pnl": round(unrealized, 2),
@@ -225,8 +226,9 @@ def trades(limit: int = 50, db: Session = Depends(db_session)):
 
 @app.post("/api/paper-orders")
 def place_paper_order(order: PaperOrder, _: bool = Depends(require_control_token), db: Session = Depends(db_session)):
-    # The quote is synthetic demo data. Never routes to an exchange.
-    candle = demo_candles(order.symbol, 1)[0]
+    # Uses a public Coinbase quote when available, otherwise an explicit demo fallback. Never routes to an exchange.
+    quote = coinbase_candles(order.symbol, 1)
+    candle = quote[-1] if quote else demo_candles(order.symbol, 1)[0]
     price = candle["close"]
     position = db.scalar(select(Position).where(Position.symbol == order.symbol))
     if position is None:
