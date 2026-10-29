@@ -51,6 +51,7 @@ jobs:
           echo "$KEYSTORE_B64" | base64 --decode > "$RUNNER_TEMP/tradingbot-release.jks"
           echo "ANDROID_KEYSTORE_PATH=$RUNNER_TEMP/tradingbot-release.jks" >> "$GITHUB_ENV"
       - name: Build and verify signed APK
+        id: build_apk
         env:
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
@@ -60,6 +61,7 @@ jobs:
           TAG="${GITHUB_REF_NAME}"
           if [ "${GITHUB_EVENT_NAME}" = "workflow_dispatch" ]; then TAG="${{ inputs.version }}"; fi
           case "$TAG" in txai-v*) VERSION="${TAG#txai-v}" ;; *) VERSION="$TAG"; TAG="txai-v$TAG" ;; esac
+          echo "release_tag=$TAG" >> "$GITHUB_OUTPUT"
           VERSION_CODE="${GITHUB_RUN_NUMBER}"
           gradle --no-daemon --stacktrace assembleRelease -PappVersionCode="$VERSION_CODE" -PappVersionName="$VERSION"
           APK=app/build/outputs/apk/release/app-release.apk
@@ -71,8 +73,8 @@ jobs:
       - name: Publish APK release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.event_name == 'workflow_dispatch' && inputs.version || github.ref_name }}
-          name: TX AI ${{ github.event_name == 'workflow_dispatch' && inputs.version || github.ref_name }}
+          tag_name: ${{ steps.build_apk.outputs.release_tag }}
+          name: TX AI ${{ steps.build_apk.outputs.release_tag }}
           generate_release_notes: true
           files: |
             ${{ runner.temp }}/release/TX-AI-*.apk
