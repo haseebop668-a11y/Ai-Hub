@@ -7,17 +7,20 @@ import secrets
 import urllib.error
 import urllib.request
 from datetime import datetime, timezone
-from pathlib import Path
 from typing import Literal
 
 from fastapi import Depends, FastAPI, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
-from sqlalchemy import Boolean, DateTime, Float, Integer, String, create_engine, select
+from sqlalchemy import DateTime, Float, Integer, String, create_engine, select
 from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column, sessionmaker
 
 APP_VERSION = "0.1.0"
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./tradingbot.db")
+if DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql+psycopg://", 1)
+elif DATABASE_URL.startswith("postgresql://"):
+    DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+psycopg://", 1)
 connect_args = {"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {}
 engine = create_engine(DATABASE_URL, connect_args=connect_args, pool_pre_ping=True)
 SessionLocal = sessionmaker(bind=engine, expire_on_commit=False)
@@ -132,13 +135,41 @@ def health():
             "mode": "paper-only", "market_data": "demo-only", "version": APP_VERSION}
 
 
+def portfolio_metrics(db: Session) -> dict:
+    # Average-cost accounting for long-only paper positions. Marks use synthetic demo quotes.
+    trades = db.scalars(select(Trade).order_by(Trade.id.asc())).all()
+    average_cost: dict[str, float] = {}
+    quantities: dict[str, float] = {}
+    realized = 0.0
+    for trade in trades:
+        qty = quantities.get(trade.symbol, 0.0)
+        avg = average_cost.get(trade.symbol, 0.0)
+        if trade.side == "BUY":
+            new_qty = qty + trade.quantity
+            average_cost[trade.symbol] = ((qty * avg) + (trade.quantity * trade.price)) / new_qty
+            quantities[trade.symbol] = new_qty
+        else:
+            realized += (trade.price - avg) * trade.quantity
+            quantities[trade.symbol] = max(0.0, qty - trade.quantity)
+            if quantities[trade.symbol] <= 1e-9:
+                average_cost[trade.symbol] = 0.0
+    unrealized = 0.0
+    for position in db.scalars(select(Position)).all():
+        if position.quantity > 1e-9:
+            mark = demo_candles(position.symbol, 1)[0]["close"]
+            unrealized += (mark - position.average_entry) * position.quantity
+    return {"starting_equity": 10000.0, "realized_pnl": round(realized, 2),
+            "unrealized_pnl": round(unrealized, 2),
+            "equity": round(10000.0 + realized + unrealized, 2)}
+
+
 @app.get("/api/status")
 def status(db: Session = Depends(db_session)):
     positions = db.scalars(select(Position)).all()
     trades = db.scalars(select(Trade)).all()
     return {"bot_status": "IDLE", "mode": "PAPER", "live_trading_enabled": False,
             "market_data": "DEMO", "open_positions": len([p for p in positions if abs(p.quantity) > 1e-9]),
-            "total_paper_trades": len(trades), "last_scan": None}
+            "total_paper_trades": len(trades), "last_scan": None, **portfolio_metrics(db)}
 
 
 @app.get("/api/candles")
