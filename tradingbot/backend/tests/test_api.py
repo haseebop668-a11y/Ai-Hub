@@ -45,6 +45,9 @@ def test_paper_buy_persists_position_and_trade():
     assert client.get("/api/trades").json()[0]["side"] == "BUY"
     positions = client.get("/api/positions").json()
     assert positions[0]["quantity"] == pytest.approx(0.1)
+    status = client.get("/api/status").json()
+    assert status["equity"] > 0
+    assert "realized_pnl" in status and "unrealized_pnl" in status
 
 
 def test_cannot_sell_more_than_open_paper_position():
