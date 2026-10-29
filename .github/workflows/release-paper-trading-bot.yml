@@ -3,11 +3,11 @@ name: Publish Signed Paper Trading APK
 on:
   push:
     tags:
-      - 'trading-v*'
+      - 'txai-v*'
   workflow_dispatch:
     inputs:
       version:
-        description: 'Release version, for example trading-v0.2.0'
+        description: 'Release version, for example txai-v0.3.0'
         required: true
         type: string
 
@@ -65,14 +65,14 @@ jobs:
           test -s "$APK"
           apksigner verify "$APK"
           mkdir -p "$RUNNER_TEMP/release"
-          cp "$APK" "$RUNNER_TEMP/release/NoirTrade-$VERSION.apk"
-          sha256sum "$RUNNER_TEMP/release/NoirTrade-$VERSION.apk" > "$RUNNER_TEMP/release/SHA256SUMS.txt"
+          cp "$APK" "$RUNNER_TEMP/release/TX AI-$VERSION.apk"
+          sha256sum "$RUNNER_TEMP/release/TX AI-$VERSION.apk" > "$RUNNER_TEMP/release/SHA256SUMS.txt"
       - name: Publish APK release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.event_name == 'workflow_dispatch' && inputs.version || github.ref_name }}
-          name: NoirTrade ${{ github.event_name == 'workflow_dispatch' && inputs.version || github.ref_name }}
+          name: TX AI ${{ github.event_name == 'workflow_dispatch' && inputs.version || github.ref_name }}
           generate_release_notes: true
           files: |
-            ${{ runner.temp }}/release/NoirTrade-*.apk
+            ${{ runner.temp }}/release/TX AI-*.apk
             ${{ runner.temp }}/release/SHA256SUMS.txt
