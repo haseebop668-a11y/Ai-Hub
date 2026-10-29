@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: ai-hub-paper-trading-api
+    name: tx-ai-market-api
     runtime: python
     plan: free
     rootDir: tradingbot/backend
