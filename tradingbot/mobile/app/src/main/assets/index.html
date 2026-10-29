@@ -29,17 +29,18 @@
 <section class="card"><div class="section-title">Recent paper trades</div><div id="trades" class="empty">No trade history loaded.</div></section>
 <section class="card"><div class="section-title">Connect backend provider</div><div class="small">Choose a host for the TX AI FastAPI service. These buttons open the provider dashboard; after authorizing GitHub and deploying, copy the service URL here. The host cannot be deployed without your account approval.</div>
 <div class="provider-grid">
-<a class="provider-link" href="https://app.koyeb.com/" target="_blank" rel="noopener"><b>Koyeb</b><span>Recommended · FastAPI + GitHub</span><em>Open provider ↗</em></a>
-<a class="provider-link" href="https://railway.com/new" target="_blank" rel="noopener"><b>Railway</b><span>GitHub deploy · check current plan</span><em>Open provider ↗</em></a>
-<a class="provider-link" href="https://console.cloud.google.com/run" target="_blank" rel="noopener"><b>Google Cloud Run</b><span>Container API · billing setup may be required</span><em>Open provider ↗</em></a>
-<a class="provider-link" href="https://huggingface.co/new-space" target="_blank" rel="noopener"><b>Hugging Face Spaces</b><span>Docker Space · sleep/storage limits apply</span><em>Open provider ↗</em></a>
-<a class="provider-link" href="https://dashboard.render.com/" target="_blank" rel="noopener"><b>Render</b><span>Alternative if deployment issue is fixed</span><em>Open provider ↗</em></a>
+<a class="provider-link" href="https://app.koyeb.com/" onclick="return openProvider(event,this.href)" target="_blank" rel="noopener"><b>Koyeb</b><span>Recommended · FastAPI + GitHub</span><em>Open provider ↗</em></a>
+<a class="provider-link" href="https://railway.com/new" onclick="return openProvider(event,this.href)" target="_blank" rel="noopener"><b>Railway</b><span>GitHub deploy · check current plan</span><em>Open provider ↗</em></a>
+<a class="provider-link" href="https://console.cloud.google.com/run" onclick="return openProvider(event,this.href)" target="_blank" rel="noopener"><b>Google Cloud Run</b><span>Container API · billing setup may be required</span><em>Open provider ↗</em></a>
+<a class="provider-link" href="https://huggingface.co/new-space" onclick="return openProvider(event,this.href)" target="_blank" rel="noopener"><b>Hugging Face Spaces</b><span>Docker Space · sleep/storage limits apply</span><em>Open provider ↗</em></a>
+<a class="provider-link" href="https://dashboard.render.com/" onclick="return openProvider(event,this.href)" target="_blank" rel="noopener"><b>Render</b><span>Alternative if deployment issue is fixed</span><em>Open provider ↗</em></a>
 </div><div class="small" style="margin-top:10px">Streamlit Community Cloud is mainly for Streamlit apps, not the best fit for this FastAPI/WebSocket backend. For now, these are provider launch links—not a completed OAuth connection. TX AI will only show connected after a real health check.</div>
 <label for="apiOrigin">FastAPI base URL (HTTPS)</label><input id="apiOrigin" type="url" placeholder="https://your-deployed-service-url"><label for="apiToken">Bearer token (session only)</label><input id="apiToken" type="password" autocomplete="off" placeholder="Optional for public read-only mode"><div class="row"><button class="btn secondary" id="connect">Test & connect</button><button class="btn secondary" id="saveApi">Save URL</button></div><div class="small" style="margin-top:9px">Never paste exchange API keys here or commit secrets to GitHub.</div></section>
 <section class="card"><div class="section-title">TX AI updates</div><div id="updateInfo" class="small">Checking latest TX AI version…</div><button id="checkUpdate" class="btn secondary" style="margin-top:10px;width:100%">Check for update</button></section>
 <div class="foot">TX AI · Market data from configured provider when available. Paper orders only; no live broker execution. Not investment advice.</div>
 </main>
 <script>
+function openProvider(event,url){if(event)event.preventDefault();if(window.AndroidBridge&&typeof AndroidBridge.openProvider==="function"){AndroidBridge.openProvider(url);return false}window.open(url,"_blank","noopener");return false}
 const $=id=>document.getElementById(id);let candles=[];let apiToken="";let tvLoading=false;let tvSymbolLoaded="";let quoteSocket=null;let quoteSocketSymbol="";
 const apiOrigin=()=>($("apiOrigin").value||"").trim().replace(/\/$/,"");
 function money(n){return new Intl.NumberFormat("en-US",{style:"currency",currency:"USD"}).format(Number(n)||0)}
