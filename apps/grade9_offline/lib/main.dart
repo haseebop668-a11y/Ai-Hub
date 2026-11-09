@@ -3,6 +3,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'data/local_database.dart';
 import 'features/flashcards/flashcard_screens.dart';
+import 'features/tutor/today_tutor_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -107,7 +108,7 @@ class _HomeScreenState extends State<HomeScreen> {
           children: [
             Text('YOUR STUDY DESK',
                 style: TextStyle(fontSize: 11, letterSpacing: 1.5)),
-            Text('Grade 9', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800)),
+            Text('Grade 9 AI Tutor', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800)),
           ],
         ),
         actions: [
@@ -153,6 +154,29 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
               const SizedBox(height: 18),
+              FilledButton.icon(
+                style: FilledButton.styleFrom(
+                  minimumSize: const Size.fromHeight(58),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                ),
+                onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => const TodayTutorPage(),
+                  ),
+                ),
+                icon: const Icon(Icons.auto_awesome_rounded),
+                label: const Text("Start today's study session",
+                    style: TextStyle(fontWeight: FontWeight.w800)),
+              ),
+              const Padding(
+                padding: EdgeInsets.only(top: 8, bottom: 10),
+                child: Text(
+                  'Your tutor picks the next lesson, revision and recall practice from your progress.',
+                  style: TextStyle(fontSize: 12, color: Color(0xFF667085)),
+                ),
+              ),
               Card(
                 child: ListTile(
                   leading: const CircleAvatar(
