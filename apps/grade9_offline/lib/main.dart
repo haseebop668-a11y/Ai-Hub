@@ -229,26 +229,4 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  void _showSubjectInfo(BuildContext context, String subject) {
-    showModalBottomSheet<void>(
-      context: context,
-      showDragHandle: true,
-      builder: (context) => Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(subject, style: Theme.of(context).textTheme.titleLarge),
-            const SizedBox(height: 8),
-            const Text(
-              'The subject workspace is ready for verified textbook chapters, '
-              'lesson explanations, exercises and revision cards.',
-            ),
-            const SizedBox(height: 16),
-          ],
-        ),
-      ),
-    );
-  }
 }
