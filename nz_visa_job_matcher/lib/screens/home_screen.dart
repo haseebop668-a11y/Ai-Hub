@@ -731,7 +731,9 @@ class _HomeScreenState extends State<HomeScreen> {
             onPressed: () {
               if (title.text.trim().isEmpty ||
                   company.text.trim().isEmpty ||
-                  description.text.trim().isEmpty) return;
+                  description.text.trim().isEmpty) {
+                return;
+              }
               Navigator.pop(
                 dialogContext,
                 JobRecord(
