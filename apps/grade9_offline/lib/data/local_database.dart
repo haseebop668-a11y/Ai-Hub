@@ -356,4 +356,36 @@ class LocalDatabase {
       });
     });
   }
+
+  Future<List<Map<String, Object?>>> importedBooks() async {
+    final db = await database;
+    return db.query('imported_books', orderBy: 'imported_at DESC, id DESC');
+  }
+
+  Future<int> addImportedBook({
+    required String title,
+    required String localPath,
+  }) async {
+    final cleanTitle = title.trim();
+    final cleanPath = localPath.trim();
+    if (cleanTitle.isEmpty || cleanPath.isEmpty) {
+      throw ArgumentError('A PDF needs a title and local file path.');
+    }
+    final db = await database;
+    return db.insert(
+      'imported_books',
+      {
+        'title': cleanTitle,
+        'local_path': cleanPath,
+        'imported_at': DateTime.now().millisecondsSinceEpoch,
+      },
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  Future<void> removeImportedBook(int id) async {
+    final db = await database;
+    await db.delete('imported_books', where: 'id = ?', whereArgs: [id]);
+  }
+
 }
