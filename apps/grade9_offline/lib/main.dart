@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'data/local_database.dart';
+import 'features/flashcards/flashcard_screens.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -165,7 +166,9 @@ class _HomeScreenState extends State<HomeScreen> {
                       ? 'Checking your review queue…'
                       : '$_dueCount cards due for review'),
                   trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 16),
-                  onTap: () => _showReviewInfo(context),
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute<void>(builder: (_) => const FlashcardReviewPage()),
+                  ).then((_) => _loadDueCount()),
                 ),
               ),
               const SizedBox(height: 22),
@@ -188,7 +191,14 @@ class _HomeScreenState extends State<HomeScreen> {
                   return Card(
                     child: InkWell(
                       borderRadius: BorderRadius.circular(20),
-                      onTap: () => _showSubjectInfo(context, subject.$1),
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) => SubjectWorkspacePage(
+                            subjectId: subject.$2,
+                            subjectTitle: subject.$1,
+                          ),
+                        ),
+                      ).then((_) => _loadDueCount()),
                       child: Padding(
                         padding: const EdgeInsets.all(15),
                         child: Column(
@@ -215,22 +225,6 @@ class _HomeScreenState extends State<HomeScreen> {
             ],
           ),
         ),
-      ),
-    );
-  }
-
-  void _showReviewInfo(BuildContext context) {
-    showDialog<void>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Memory review'),
-        content: const Text(
-          'The local SM-2 review scheduler and SQLite storage are in place. '
-          'Create and populate verified chapter cards in the next learning-content module.',
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Close')),
-        ],
       ),
     );
   }
