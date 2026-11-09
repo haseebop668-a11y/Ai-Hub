@@ -92,6 +92,7 @@ class LocalDatabase {
           await _createAdaptiveTables(database);
         }
       },
+    );
     _database = db;
     return db;
   }
