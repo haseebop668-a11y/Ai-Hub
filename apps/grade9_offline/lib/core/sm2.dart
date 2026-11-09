@@ -38,7 +38,7 @@ class Sm2Scheduler {
     final quality = difficulty;
     final easeDelta = 0.1 -
         (5 - quality) * (0.08 + (5 - quality) * 0.02);
-    final nextEase = (previousEaseFactor + easeDelta).clamp(1.3, 3.0);
+    final nextEase = (previousEaseFactor + easeDelta).clamp(1.3, 3.0).toDouble();
 
     late final int repetitions;
     late final int interval;
@@ -52,7 +52,7 @@ class Sm2Scheduler {
       } else if (repetitions == 2) {
         interval = 6;
       } else {
-        interval = (previousIntervalDays * nextEase).round().clamp(1, 36500);
+        interval = (previousIntervalDays * nextEase).round().clamp(1, 36500).toInt();
       }
     }
 
