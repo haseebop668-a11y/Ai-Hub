@@ -181,10 +181,10 @@ class StudyPlanner {
     var score = (1 - unit.mastery.clamp(0, 1)) * 100;
     if (unit.lastStudiedAt == null) score += 30;
     if (unit.dueAt != null && !unit.dueAt!.isAfter(now)) {
-      score += 80 + now.difference(unit.dueAt!).inHours.clamp(0, 720) / 24;
+      score += (80 + now.difference(unit.dueAt!).inHours.clamp(0, 720) / 24).toDouble();
     }
     if (unit.lastStudiedAt != null) {
-      score += now.difference(unit.lastStudiedAt!).inDays.clamp(0, 30) * 1.5;
+      score += (now.difference(unit.lastStudiedAt!).inDays.clamp(0, 30) * 1.5).toDouble();
     }
     return score - unit.order * 0.001;
   }
