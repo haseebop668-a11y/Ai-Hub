@@ -304,7 +304,7 @@ class _StudyLessonPageState extends State<StudyLessonPage> {
     final source = _keywords(unit['body_text']! as String);
     final response = _keywords(_answer.text);
     final coverage = source.isEmpty ? 0.0 : response.intersection(source).length / source.length;
-    final score = coverage.clamp(0.0, 1.0);
+    final score = coverage.clamp(0.0, 1.0).toDouble();
     final now = DateTime.now();
     await LocalDatabase.instance.recordLearningOutcome(
       unitId: widget.unitId,
