@@ -82,7 +82,7 @@ class StudyPlanner {
       final minutes = math.min(
         remaining,
         math.max(3, dueReviewMinutes > 0 ? dueReviewMinutes : dueReviewCount * 2),
-      );
+      ).toInt();
       tasks.add(StudyTask(
         kind: StudyTaskKind.review,
         title: 'Recall previous lessons',
@@ -116,7 +116,8 @@ class StudyPlanner {
         : (unfinished.isNotEmpty ? unfinished.first : null);
 
     if (chosen != null && remaining >= 8) {
-      final lessonMinutes = math.min(remaining, chosen.estimatedMinutes.clamp(8, 25));
+      final lessonMinutes =
+          math.min(remaining, chosen.estimatedMinutes.clamp(8, 25)).toInt();
       tasks.add(StudyTask(
         kind: StudyTaskKind.learn,
         title: chosen.title,
