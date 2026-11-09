@@ -1,0 +1,73 @@
+name: Build NZ Visa Job Matcher Android APK
+
+on:
+  push:
+    paths:
+      - 'nz_visa_job_matcher/**'
+      - '.github/workflows/build-nz-visa-job-matcher-android.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nz-visa-job-matcher-android-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Analyze, test and build debug APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Generate Android host project
+        run: flutter create --platforms=android --org com.haseeb --project-name nzvisajobmatcher /tmp/nz_visa_host
+
+      - name: Overlay application source and tests
+        run: |
+          cp nz_visa_job_matcher/pubspec.yaml /tmp/nz_visa_host/pubspec.yaml
+          rm -rf /tmp/nz_visa_host/lib /tmp/nz_visa_host/test
+          cp -R nz_visa_job_matcher/lib /tmp/nz_visa_host/lib
+          cp -R nz_visa_job_matcher/test /tmp/nz_visa_host/test
+          sed -i 's/android:label="nzvisajobmatcher"/android:label="NZ Visa Job Matcher"/' /tmp/nz_visa_host/android/app/src/main/AndroidManifest.xml
+
+      - name: Resolve dependencies
+        working-directory: /tmp/nz_visa_host
+        run: flutter pub get
+
+      - name: Analyze Dart source
+        working-directory: /tmp/nz_visa_host
+        run: flutter analyze --no-pub
+
+      - name: Run unit tests
+        working-directory: /tmp/nz_visa_host
+        run: flutter test --no-pub --reporter expanded
+
+      - name: Build Android debug APK
+        working-directory: /tmp/nz_visa_host
+        run: flutter build apk --debug
+
+      - name: Verify APK
+        run: |
+          APK=/tmp/nz_visa_host/build/app/outputs/flutter-apk/app-debug.apk
+          test -s "$APK"
+          unzip -t "$APK"
+          sha256sum "$APK"
+          ls -lh "$APK"
+
+      - name: Upload installable APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: nz-visa-job-matcher-debug-apk
+          path: /tmp/nz_visa_host/build/app/outputs/flutter-apk/app-debug.apk
+          if-no-files-found: error
+          retention-days: 14

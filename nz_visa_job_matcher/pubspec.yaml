@@ -1,0 +1,21 @@
+name: nz_visa_job_matcher
+description: Local-first New Zealand AEWV job screening and application preparation.
+publish_to: "none"
+version: 0.1.0+1
+environment:
+  sdk: ">=3.3.0 <4.0.0"
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_secure_storage: ^9.2.4
+  shared_preferences: ^2.5.3
+  path_provider: ^2.1.5
+  pdf: ^3.11.3
+  printing: ^5.14.2
+  url_launcher: ^6.3.2
+  image_picker: ^1.1.2
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+flutter:
+  uses-material-design: true
