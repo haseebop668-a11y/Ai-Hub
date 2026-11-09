@@ -1,36 +1,59 @@
-# Grade 9 Offline Learning
+# Grade 9 AI Tutor — offline-first Android app
 
-Android-first, offline-first Flutter application for Grade 9 study and active recall.
+This app is being redesigned from a flashcard utility into an **adaptive tutor**.
+The learner should press one primary action — **Start today's study session** —
+and the app chooses the next lesson, review queue, recall exercise and mini-test.
 
-## Current implementation
+## Product behaviour
 
-- Warm academic Material 3 dashboard.
-- Local SQLite schema for subjects, flashcards, review history, study progress and imported-book metadata.
-- Deterministic SM-2 scheduling core with input validation.
-- Offline Levenshtein spelling suggestion engine.
-- Unit tests for scheduling and spelling algorithms.
-- No cloud API calls or analytics SDKs in the runtime dependency set.
+1. **Automatic study selection:** deterministic planner prioritizes overdue recall,
+   low-mastery units, never-studied lessons and curriculum sequence. No daily
+   subject/chapter picker is required.
+2. **Teach → close book → recall → feedback → retest:** each lesson is taught in
+   small steps, then the learner explains it in their own words, answers targeted
+   questions, sees corrections and retries weak points.
+3. **Spaced repetition:** recall results update per-unit mastery and due dates.
+4. **Progress-aware sessions:** a short daily goal is filled with review + one
+   focused lesson + closed-book recall + a mini-test.
+5. **Local-first privacy:** learner profile, source files, extracted text, answers
+   and progress stay on-device. Any optional online model call must be explicitly
+   enabled and must disclose what is sent.
 
-## Important content policy
+## Content pipeline (next implementation milestone)
 
-The repository does not bundle textbook PDFs or copied textbook answer banks. Official books remain the authoritative source, and their distribution rights must be respected. Curriculum-specific lessons and question banks are added only after their edition, board and source are verified. The app is designed to support local textbook imports in a subsequent reader module.
+- Use official PECTAA sources as the Punjab curriculum catalogue. Detect edition
+  and academic year; never silently combine the 2020, 2025-26 and 2026-27 books.
+- Keep Federal/NCC content as a separate curriculum profile.
+- Import/download only from a curated, source-verified catalogue. A web search
+  result is not proof of permission to redistribute a textbook PDF.
+- Extract selectable PDF text locally; identify chapter headings and page ranges;
+  OCR scanned pages locally only where an Urdu-capable model is available.
+- Store source title, publisher, board, edition, year, page references and content
+  hash with every extracted lesson.
+- Generate explanations and questions from retrieved source passages, with page
+  citations. Reject questions that cannot be traced to source material.
+- User-owned PDFs can be imported locally. The tutor should not require the user
+  to manually create flashcards or select chapters.
 
-## Build locally
+## Model strategy
 
-Requires Flutter stable and Android SDK:
+The planner, mastery scoring, review scheduling and question templates are
+deterministic and work offline. The LLM is an optional teaching assistant, not
+the authority for curriculum facts. Do not bundle a large model inside the APK:
+download a separately licensed, quantized model after install, with a clear
+storage estimate, checksum, pause/resume and delete controls. The target device
+is Snapdragon 865 with 8 GB RAM, so benchmark 0.5B–1B quantized models before
+choosing a default. The model must be checked for education-use restrictions and
+Urdu/English quality; model size or Apache licensing alone is not sufficient.
+If local inference is too slow, use authored lesson templates offline rather than
+making an API mandatory. Hugging Face hosted inference can only be an opt-in
+online enhancement; free quotas and availability are not guaranteed.
 
-```sh
-flutter pub get
-dart format --output=none --set-exit-if-changed .
-flutter analyze
-flutter test
-flutter build apk --debug
-```
+## Current status
 
-## Offline guarantees and limitations
-
-SQLite, SM-2 scheduling and dictionary-based spelling suggestions work locally. Speech recognition, speech synthesis and PDF text extraction are not claimed as complete in this initial implementation. Android TTS depends on an installed device voice; offline STT requires a bundled, licensed language model. The Vosk model catalogue currently does not list Urdu, so Vosk is not a valid Urdu STT solution without a separately sourced and tested model.
-
-## Curriculum baseline
-
-Punjab PECTAA Grade IX books are the default source baseline. Keep the academic year and edition attached to every content record. Federal/NCC curriculum material must be a separate curriculum profile, not silently mixed with Punjab Board material.
+- Flutter dashboard, SQLite persistence, flashcards and SM-2 review exist.
+- Adaptive planner core is being added with tests.
+- PDF ingestion, curated official content catalogue, full lesson/assessment
+  experience, model runtime and physical-device benchmarking are not complete.
+- Do not describe this build as a finished AI tutor or claim 100% offline
+  textbook coverage until those milestones pass.
