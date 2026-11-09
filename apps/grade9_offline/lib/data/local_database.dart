@@ -13,7 +13,7 @@ class LocalDatabase {
     final root = await getDatabasesPath();
     final db = await openDatabase(
       p.join(root, 'grade9_learning.db'),
-      version: 1,
+      version: 2,
       onConfigure: (database) async {
         await database.execute('PRAGMA foreign_keys = ON');
       },
@@ -85,8 +85,13 @@ class LocalDatabase {
           });
         }
         await batch.commit(noResult: true);
+        await _createAdaptiveTables(database);
       },
-    );
+      onUpgrade: (database, oldVersion, newVersion) async {
+        if (oldVersion < 2) {
+          await _createAdaptiveTables(database);
+        }
+      },
     _database = db;
     return db;
   }
@@ -149,6 +154,161 @@ class LocalDatabase {
       whereArgs: [(now ?? DateTime.now()).millisecondsSinceEpoch],
       orderBy: 'due_at ASC, id ASC',
     );
+  }
+
+  Future<void> _createAdaptiveTables(DatabaseExecutor database) async {
+    await database.execute('''
+      CREATE TABLE IF NOT EXISTS learning_sources(
+        id TEXT PRIMARY KEY,
+        title TEXT NOT NULL,
+        board TEXT NOT NULL,
+        academic_year TEXT NOT NULL,
+        medium TEXT NOT NULL,
+        local_path TEXT NOT NULL,
+        source_url TEXT,
+        content_hash TEXT NOT NULL,
+        imported_at INTEGER NOT NULL
+      )
+    ''');
+    await database.execute('''
+      CREATE TABLE IF NOT EXISTS learning_units(
+        id TEXT PRIMARY KEY,
+        source_id TEXT,
+        subject_id TEXT NOT NULL,
+        chapter_title TEXT NOT NULL,
+        title TEXT NOT NULL,
+        body_text TEXT NOT NULL,
+        page_start INTEGER,
+        page_end INTEGER,
+        sequence_order INTEGER NOT NULL,
+        mastery REAL NOT NULL DEFAULT 0,
+        last_studied_at INTEGER,
+        due_at INTEGER,
+        is_completed INTEGER NOT NULL DEFAULT 0,
+        estimated_minutes INTEGER NOT NULL DEFAULT 12,
+        FOREIGN KEY(source_id) REFERENCES learning_sources(id) ON DELETE SET NULL,
+        FOREIGN KEY(subject_id) REFERENCES subjects(id) ON DELETE CASCADE
+      )
+    ''');
+    await database.execute('''
+      CREATE TABLE IF NOT EXISTS learning_attempts(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        unit_id TEXT NOT NULL,
+        mode TEXT NOT NULL,
+        prompt TEXT NOT NULL,
+        expected_answer TEXT,
+        learner_answer TEXT,
+        score REAL NOT NULL,
+        feedback TEXT NOT NULL,
+        created_at INTEGER NOT NULL,
+        FOREIGN KEY(unit_id) REFERENCES learning_units(id) ON DELETE CASCADE
+      )
+    ''');
+    await database.execute('''
+      CREATE TABLE IF NOT EXISTS learner_profile(
+        id INTEGER PRIMARY KEY CHECK(id = 1),
+        board TEXT NOT NULL DEFAULT 'Punjab',
+        academic_year TEXT NOT NULL DEFAULT '2026-27',
+        medium TEXT NOT NULL DEFAULT 'English',
+        daily_goal_minutes INTEGER NOT NULL DEFAULT 25,
+        setup_completed INTEGER NOT NULL DEFAULT 0
+      )
+    ''');
+    await database.execute('''
+      CREATE TABLE IF NOT EXISTS study_sessions(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        started_at INTEGER NOT NULL,
+        completed_at INTEGER,
+        planned_minutes INTEGER NOT NULL,
+        completed_minutes INTEGER NOT NULL DEFAULT 0,
+        outcome TEXT NOT NULL DEFAULT 'in_progress'
+      )
+    ''');
+    await database.insert(
+      'learner_profile',
+      {'id': 1},
+      conflictAlgorithm: ConflictAlgorithm.ignore,
+    );
+  }
+
+  Future<List<Map<String, Object?>>> learningUnits() async {
+    final db = await database;
+    return db.query(
+      'learning_units',
+      orderBy: 'sequence_order ASC, id ASC',
+    );
+  }
+
+  Future<void> saveLearningUnit({
+    required String id,
+    required String subjectId,
+    required String chapterTitle,
+    required String title,
+    required String bodyText,
+    required int sequenceOrder,
+    String? sourceId,
+    int? pageStart,
+    int? pageEnd,
+    int estimatedMinutes = 12,
+  }) async {
+    if (id.trim().isEmpty || title.trim().isEmpty || bodyText.trim().isEmpty) {
+      throw ArgumentError('A learning unit needs an id, title and source text.');
+    }
+    final db = await database;
+    await db.insert('learning_units', {
+      'id': id,
+      'source_id': sourceId,
+      'subject_id': subjectId,
+      'chapter_title': chapterTitle,
+      'title': title,
+      'body_text': bodyText,
+      'page_start': pageStart,
+      'page_end': pageEnd,
+      'sequence_order': sequenceOrder,
+      'estimated_minutes': estimatedMinutes.clamp(5, 45),
+    }, conflictAlgorithm: ConflictAlgorithm.replace);
+  }
+
+  Future<void> recordLearningOutcome({
+    required String unitId,
+    required double score,
+    required DateTime completedAt,
+  }) async {
+    if (!score.isFinite || score < 0 || score > 1) {
+      throw ArgumentError.value(score, 'score', 'Must be between 0 and 1.');
+    }
+    final db = await database;
+    await db.transaction((txn) async {
+      final rows = await txn.query(
+        'learning_units',
+        columns: ['mastery'],
+        where: 'id = ?',
+        whereArgs: [unitId],
+        limit: 1,
+      );
+      if (rows.isEmpty) throw StateError('Learning unit does not exist.');
+      final oldMastery = (rows.first['mastery'] as num).toDouble();
+      final nextMastery = (oldMastery * 0.6 + score * 0.4).clamp(0.0, 1.0);
+      final nextDueDays = score >= 0.85 ? 3 : score >= 0.6 ? 1 : 0;
+      await txn.update(
+        'learning_units',
+        {
+          'mastery': nextMastery,
+          'last_studied_at': completedAt.millisecondsSinceEpoch,
+          'due_at': completedAt.add(Duration(days: nextDueDays)).millisecondsSinceEpoch,
+          'is_completed': nextMastery >= 0.9 ? 1 : 0,
+        },
+        where: 'id = ?',
+        whereArgs: [unitId],
+      );
+    });
+  }
+
+  Future<Map<String, Object?>> learnerProfile() async {
+    final db = await database;
+    final rows = await db.query('learner_profile', where: 'id = 1', limit: 1);
+    if (rows.isEmpty) throw StateError('Learner profile is missing.');
+    return rows.first;
   }
 
   Future<void> saveReview({
