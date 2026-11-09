@@ -3,6 +3,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'data/local_database.dart';
 import 'features/flashcards/flashcard_screens.dart';
+import 'features/library/pdf_library_page.dart';
 import 'features/tutor/today_tutor_page.dart';
 
 void main() async {
@@ -112,6 +113,15 @@ class _HomeScreenState extends State<HomeScreen> {
           ],
         ),
         actions: [
+          IconButton(
+            tooltip: 'Offline PDF library',
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => const PdfLibraryPage(),
+              ),
+            ),
+            icon: const Icon(Icons.picture_as_pdf_outlined),
+          ),
           IconButton(
             tooltip: 'Refresh review count',
             onPressed: _loadDueCount,
