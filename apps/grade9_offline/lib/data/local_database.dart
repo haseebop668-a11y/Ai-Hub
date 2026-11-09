@@ -239,6 +239,17 @@ class LocalDatabase {
     );
   }
 
+  Future<Map<String, Object?>?> learningUnit(String id) async {
+    final db = await database;
+    final rows = await db.query(
+      'learning_units',
+      where: 'id = ?',
+      whereArgs: [id],
+      limit: 1,
+    );
+    return rows.isEmpty ? null : rows.first;
+  }
+
   Future<void> saveLearningUnit({
     required String id,
     required String subjectId,
