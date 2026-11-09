@@ -74,7 +74,7 @@ class StudyPlanner {
     int dueReviewCount = 0,
     int dueReviewMinutes = 0,
   }) {
-    final goal = dailyGoalMinutes.clamp(10, 120);
+    final goal = dailyGoalMinutes.clamp(10, 120).toInt();
     final tasks = <StudyTask>[];
     var remaining = goal;
 
@@ -133,7 +133,7 @@ class StudyPlanner {
       remaining -= lessonMinutes;
 
       if (remaining >= 4) {
-        final recallMinutes = math.min(remaining, 5);
+        final recallMinutes = math.min(remaining, 5).toInt();
         tasks.add(StudyTask(
           kind: StudyTaskKind.activeRecall,
           title: 'Close the book and explain it',
@@ -178,7 +178,7 @@ class StudyPlanner {
 
   double _priority(StudyUnit unit, DateTime now) {
     if (unit.isCompleted) return -1;
-    var score = (1 - unit.mastery.clamp(0, 1)) * 100;
+    var score = ((1 - unit.mastery.clamp(0, 1)) * 100).toDouble();
     if (unit.lastStudiedAt == null) score += 30;
     if (unit.dueAt != null && !unit.dueAt!.isAfter(now)) {
       score += (80 + now.difference(unit.dueAt!).inHours.clamp(0, 720) / 24).toDouble();
