@@ -132,9 +132,7 @@ class _TodayTutorPageState extends State<TodayTutorPage> {
                           color: const Color(0xFFD97706), letterSpacing: 1.1,
                           fontWeight: FontWeight.w800)),
                   const SizedBox(height: 10),
-                  ...plan.tasks.asMap().entries.map((entry) {
-                    final index = entry.key;
-                    final task = entry.value;
+                  ...plan.tasks.map((task) {
                     final icon = switch (task.kind) {
                       StudyTaskKind.review => Icons.history_rounded,
                       StudyTaskKind.learn => Icons.auto_stories_rounded,
