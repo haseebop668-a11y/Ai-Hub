@@ -6,7 +6,7 @@ Use the official PECTAA Books and Publications and Curriculum & Compliance pages
 - https://pectaa.edu.pk/books-and-publications/
 - https://pectaa.edu.pk/curriculum-compliance/
 
-The official Grade IX listings include 2025-26 editions for English, Urdu, Mathematics, Physics, Chemistry, Biology and Computer. The Curriculum & Compliance listing also identifies Computer and Entrepreneur Grade 9 (2026-27). The exact linked PDF and edition must be checked before importing or authoring chapter content.
+The official Grade IX listings include 2025-26 editions for English, Urdu, Mathematics, Physics, Chemistry, Biology and Computer. The separate Curriculum & Compliance listing identifies **Computer and Entrepreneur 9 (2026-27)**. For a 2026-27 Punjab learner, do not use the older 2020/2023-24 Computer Science book as the current textbook. The exact linked PDF and edition must be checked before importing or authoring chapter content.\n\nOfficial linked 2026-27 Computer and Entrepreneur Grade 9 (English Medium):\n- https://drive.google.com/file/d/1C8pGmjCU0swY_N4fhpeVcx_-0oRrEss3/view?usp=drive_link\n\nThe PECTAA e-book index is the current authority for the other Grade IX titles and edition labels. It lists English, Urdu, Mathematics, Physics, Chemistry and Biology 2025-26 books separately; each selected PDF must be matched to the student's current board/year before content ingestion.
 
 ## Federal baseline
 
