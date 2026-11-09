@@ -1,0 +1,63 @@
+name: Grade 9 Offline Android Build
+
+on:
+  push:
+    branches:
+      - main
+      - feat/grade9-offline-learning-app
+    paths:
+      - "apps/grade9_offline/**"
+      - ".github/workflows/grade9_android_build.yml"
+  pull_request:
+    paths:
+      - "apps/grade9_offline/**"
+      - ".github/workflows/grade9_android_build.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: grade9-android-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify-and-build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/grade9_offline
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: flutter-actions/setup-flutter@v4
+        with:
+          channel: stable
+          version: latest
+          cache: true
+          cache-sdk: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Check formatting
+        run: dart format --output=none --set-exit-if-changed .
+
+      - name: Static analysis
+        run: flutter analyze --fatal-infos
+
+      - name: Unit and widget tests
+        run: flutter test --reporter expanded
+
+      - name: Build installable debug APK
+        run: flutter build apk --debug
+
+      - name: Upload debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: grade9-offline-debug-apk
+          path: apps/grade9_offline/build/app/outputs/flutter-apk/app-debug.apk
+          if-no-files-found: error
+          retention-days: 14
