@@ -115,6 +115,32 @@ class LocalDatabase {
     });
   }
 
+  Future<List<Map<String, Object?>>> subjects() async {
+    final db = await database;
+    return db.query('subjects', orderBy: 'sort_order ASC');
+  }
+
+  Future<List<Map<String, Object?>>> flashcardsForSubject(String subjectId) async {
+    final db = await database;
+    return db.query(
+      'flashcards',
+      where: 'subject_id = ?',
+      whereArgs: [subjectId],
+      orderBy: 'created_at DESC, id DESC',
+    );
+  }
+
+  Future<int> flashcardCount({String? subjectId}) async {
+    final db = await database;
+    final rows = await db.rawQuery(
+      subjectId == null
+          ? 'SELECT COUNT(*) AS total FROM flashcards'
+          : 'SELECT COUNT(*) AS total FROM flashcards WHERE subject_id = ?',
+      subjectId == null ? null : [subjectId],
+    );
+    return Sqflite.firstIntValue(rows) ?? 0;
+  }
+
   Future<List<Map<String, Object?>>> dueFlashcards({DateTime? now}) async {
     final db = await database;
     return db.query(
