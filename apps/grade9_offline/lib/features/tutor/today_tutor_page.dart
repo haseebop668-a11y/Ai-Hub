@@ -371,6 +371,7 @@ class _StudyLessonPageState extends State<StudyLessonPage> {
                   controller: _answer,
                   minLines: 5,
                   maxLines: 10,
+                  onChanged: (_) => setState(() {}),
                   decoration: const InputDecoration(
                     hintText: 'Write what you remember without looking…',
                     border: OutlineInputBorder(),
