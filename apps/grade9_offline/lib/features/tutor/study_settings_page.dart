@@ -28,8 +28,8 @@ class _StudySettingsPageState extends State<StudySettingsPage> {
       final profile = await LocalDatabase.instance.learnerProfile();
       if (!mounted) return;
       setState(() {
-        _goalMinutes = (profile['daily_goal_minutes'] as int? ?? 300).clamp(30, 600);
-        _breakMinutes = (profile['break_minutes'] as int? ?? 10).clamp(0, 60);
+        _goalMinutes = (profile['daily_goal_minutes'] as int? ?? 300).clamp(30, 600).toInt();
+        _breakMinutes = (profile['break_minutes'] as int? ?? 10).clamp(0, 60).toInt();
         final hour = profile['study_start_hour'] as int?;
         final minute = profile['study_start_minute'] as int?;
         _startTime = hour == null || minute == null
