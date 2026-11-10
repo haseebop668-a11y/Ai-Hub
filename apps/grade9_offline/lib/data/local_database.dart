@@ -256,16 +256,23 @@ class LocalDatabase {
   }
 
   Future<void> _upgradeStudyDiscipline(DatabaseExecutor database) async {
-    await database.execute("ALTER TABLE learner_profile ADD COLUMN schedule_mode TEXT NOT NULL DEFAULT 'fixed'");
-    await database.execute("ALTER TABLE learner_profile ADD COLUMN weekly_rest_day INTEGER NOT NULL DEFAULT 7");
-    await database.execute("ALTER TABLE learner_profile ADD COLUMN study_start_hour INTEGER");
-    await database.execute("ALTER TABLE learner_profile ADD COLUMN study_start_minute INTEGER");
-    await database.execute("ALTER TABLE learner_profile ADD COLUMN break_minutes INTEGER NOT NULL DEFAULT 10");
-    await database.execute("ALTER TABLE learner_profile ADD COLUMN focus_mode_enabled INTEGER NOT NULL DEFAULT 0");
+    Future<void> addColumnIfMissing(String table, String column, String declaration) async {
+      final columns = await database.rawQuery('PRAGMA table_info($table)');
+      if (!columns.any((row) => row['name'] == column)) {
+        await database.execute('ALTER TABLE $table ADD COLUMN $column $declaration');
+      }
+    }
+
+    await addColumnIfMissing('learner_profile', 'schedule_mode', "TEXT NOT NULL DEFAULT 'fixed'");
+    await addColumnIfMissing('learner_profile', 'weekly_rest_day', 'INTEGER NOT NULL DEFAULT 7');
+    await addColumnIfMissing('learner_profile', 'study_start_hour', 'INTEGER');
+    await addColumnIfMissing('learner_profile', 'study_start_minute', 'INTEGER');
+    await addColumnIfMissing('learner_profile', 'break_minutes', 'INTEGER NOT NULL DEFAULT 10');
+    await addColumnIfMissing('learner_profile', 'focus_mode_enabled', 'INTEGER NOT NULL DEFAULT 0');
     await database.execute("UPDATE learner_profile SET daily_goal_minutes = 300 WHERE daily_goal_minutes = 25 AND setup_completed = 0");
-    await database.execute("ALTER TABLE study_sessions ADD COLUMN activity_type TEXT NOT NULL DEFAULT 'study'");
-    await database.execute("ALTER TABLE study_sessions ADD COLUMN last_interaction_at INTEGER");
-    await database.execute("ALTER TABLE study_sessions ADD COLUMN paused_at INTEGER");
+    await addColumnIfMissing('study_sessions', 'activity_type', "TEXT NOT NULL DEFAULT 'study'");
+    await addColumnIfMissing('study_sessions', 'last_interaction_at', 'INTEGER');
+    await addColumnIfMissing('study_sessions', 'paused_at', 'INTEGER');
     await database.execute("CREATE TABLE IF NOT EXISTS daily_study_totals(day_key TEXT PRIMARY KEY, active_minutes INTEGER NOT NULL DEFAULT 0, updated_at INTEGER NOT NULL)");
   }
 
