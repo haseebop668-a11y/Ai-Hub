@@ -13,7 +13,7 @@ class LocalDatabase {
     final root = await getDatabasesPath();
     final db = await openDatabase(
       p.join(root, 'grade9_learning.db'),
-      version: 2,
+      version: 3,
       onConfigure: (database) async {
         await database.execute('PRAGMA foreign_keys = ON');
       },
@@ -91,6 +91,9 @@ class LocalDatabase {
         if (oldVersion < 2) {
           await _createAdaptiveTables(database);
         }
+        if (oldVersion < 3) {
+          await _createImportedBooksTable(database);
+        }
       },
     );
     _database = db;
@@ -155,6 +158,17 @@ class LocalDatabase {
       whereArgs: [(now ?? DateTime.now()).millisecondsSinceEpoch],
       orderBy: 'due_at ASC, id ASC',
     );
+  }
+
+  Future<void> _createImportedBooksTable(DatabaseExecutor database) async {
+    await database.execute('''
+      CREATE TABLE IF NOT EXISTS imported_books(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        title TEXT NOT NULL,
+        local_path TEXT NOT NULL UNIQUE,
+        imported_at INTEGER NOT NULL
+      )
+    ''');
   }
 
   Future<void> _createAdaptiveTables(DatabaseExecutor database) async {
