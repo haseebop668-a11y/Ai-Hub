@@ -54,4 +54,22 @@ void main() {
     );
     expect(plan.isEmpty, isTrue);
   });
+  test('300-minute study day contains six active 50-minute blocks', () {
+    final plan = planner.build(
+      now: now,
+      dailyGoalMinutes: 300,
+      dueReviewCount: 12,
+      units: [
+        StudyUnit(id: 'a', subjectId: 'math', title: 'Algebra', order: 1, mastery: 0.3),
+        StudyUnit(id: 'b', subjectId: 'physics', title: 'Motion', order: 2, mastery: 0.5),
+      ],
+    );
+
+    expect(plan.totalMinutes, 300);
+    expect(plan.tasks, hasLength(6));
+    expect(plan.tasks.map((task) => task.minutes), everyElement(50));
+    expect(plan.tasks.first.kind, StudyTaskKind.review);
+    expect(plan.tasks.last.kind, StudyTaskKind.miniTest);
+  });
+
 }
