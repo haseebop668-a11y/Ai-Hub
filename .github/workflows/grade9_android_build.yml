@@ -82,7 +82,7 @@ jobs:
           }
           """
           if "Keep Android library plugins aligned with the app compile SDK." not in source:
-              gradle.write_text(source.rstrip() + "\\n\\n" + block)
+              gradle.write_text(source.rstrip() + "\n\n" + block)
           PY
 
       - name: Install dependencies
