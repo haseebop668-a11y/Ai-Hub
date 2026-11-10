@@ -13,7 +13,7 @@ class LocalDatabase {
     final root = await getDatabasesPath();
     final db = await openDatabase(
       p.join(root, 'grade9_learning.db'),
-      version: 3,
+      version: 4,
       onConfigure: (database) async {
         await database.execute('PRAGMA foreign_keys = ON');
       },
@@ -93,6 +93,9 @@ class LocalDatabase {
         }
         if (oldVersion < 3) {
           await _createImportedBooksTable(database);
+        }
+        if (oldVersion < 4) {
+          await _upgradeStudyDiscipline(database);
         }
       },
     );
@@ -225,8 +228,14 @@ class LocalDatabase {
         board TEXT NOT NULL DEFAULT 'Punjab',
         academic_year TEXT NOT NULL DEFAULT '2026-27',
         medium TEXT NOT NULL DEFAULT 'English',
-        daily_goal_minutes INTEGER NOT NULL DEFAULT 25,
-        setup_completed INTEGER NOT NULL DEFAULT 0
+        daily_goal_minutes INTEGER NOT NULL DEFAULT 300,
+        setup_completed INTEGER NOT NULL DEFAULT 0,
+        schedule_mode TEXT NOT NULL DEFAULT 'fixed',
+        weekly_rest_day INTEGER NOT NULL DEFAULT 7,
+        study_start_hour INTEGER,
+        study_start_minute INTEGER,
+        break_minutes INTEGER NOT NULL DEFAULT 10,
+        focus_mode_enabled INTEGER NOT NULL DEFAULT 0
       )
     ''');
     await database.execute('''
@@ -244,6 +253,20 @@ class LocalDatabase {
       {'id': 1},
       conflictAlgorithm: ConflictAlgorithm.ignore,
     );
+  }
+
+  Future<void> _upgradeStudyDiscipline(DatabaseExecutor database) async {
+    await database.execute("ALTER TABLE learner_profile ADD COLUMN schedule_mode TEXT NOT NULL DEFAULT 'fixed'");
+    await database.execute("ALTER TABLE learner_profile ADD COLUMN weekly_rest_day INTEGER NOT NULL DEFAULT 7");
+    await database.execute("ALTER TABLE learner_profile ADD COLUMN study_start_hour INTEGER");
+    await database.execute("ALTER TABLE learner_profile ADD COLUMN study_start_minute INTEGER");
+    await database.execute("ALTER TABLE learner_profile ADD COLUMN break_minutes INTEGER NOT NULL DEFAULT 10");
+    await database.execute("ALTER TABLE learner_profile ADD COLUMN focus_mode_enabled INTEGER NOT NULL DEFAULT 0");
+    await database.execute("UPDATE learner_profile SET daily_goal_minutes = 300 WHERE daily_goal_minutes = 25 AND setup_completed = 0");
+    await database.execute("ALTER TABLE study_sessions ADD COLUMN activity_type TEXT NOT NULL DEFAULT 'study'");
+    await database.execute("ALTER TABLE study_sessions ADD COLUMN last_interaction_at INTEGER");
+    await database.execute("ALTER TABLE study_sessions ADD COLUMN paused_at INTEGER");
+    await database.execute("CREATE TABLE IF NOT EXISTS daily_study_totals(day_key TEXT PRIMARY KEY, active_minutes INTEGER NOT NULL DEFAULT 0, updated_at INTEGER NOT NULL)");
   }
 
   Future<List<Map<String, Object?>>> learningUnits() async {
