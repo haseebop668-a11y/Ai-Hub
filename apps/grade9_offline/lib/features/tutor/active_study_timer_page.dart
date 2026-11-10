@@ -28,7 +28,7 @@ class _ActiveStudyTimerPageState extends State<ActiveStudyTimerPage>
   bool _completed = false;
 
   bool get _isRestDay => DateTime.now().weekday == DateTime.sunday;
-  int get _remainingSeconds => (_blockSeconds - _elapsedSeconds).clamp(0, _blockSeconds);
+  int get _remainingSeconds => (_blockSeconds - _elapsedSeconds).clamp(0, _blockSeconds).toInt();
 
   @override
   void initState() {
