@@ -13,7 +13,7 @@ class LocalDatabase {
     final root = await getDatabasesPath();
     final db = await openDatabase(
       p.join(root, 'grade9_learning.db'),
-      version: 4,
+      version: 5,
       onConfigure: (database) async {
         await database.execute('PRAGMA foreign_keys = ON');
       },
@@ -96,6 +96,9 @@ class LocalDatabase {
         }
         if (oldVersion < 4) {
           await _upgradeStudyDiscipline(database);
+        }
+        if (oldVersion < 5) {
+          await _upgradeActiveStudyTotals(database);
         }
       },
     );
@@ -238,6 +241,14 @@ class LocalDatabase {
         focus_mode_enabled INTEGER NOT NULL DEFAULT 0
       )
     ''');
+    await database.execute("""
+      CREATE TABLE IF NOT EXISTS daily_study_totals(
+        day_key TEXT PRIMARY KEY,
+        active_seconds INTEGER NOT NULL DEFAULT 0,
+        active_minutes INTEGER NOT NULL DEFAULT 0,
+        updated_at INTEGER NOT NULL
+      )
+    """);
     await database.execute('''
       CREATE TABLE IF NOT EXISTS study_sessions(
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -253,6 +264,18 @@ class LocalDatabase {
       {'id': 1},
       conflictAlgorithm: ConflictAlgorithm.ignore,
     );
+  }
+
+  Future<void> _upgradeActiveStudyTotals(DatabaseExecutor database) async {
+    final columns = await database.rawQuery('PRAGMA table_info(daily_study_totals)');
+    if (!columns.any((row) => row['name'] == 'active_seconds')) {
+      await database.execute(
+        'ALTER TABLE daily_study_totals ADD COLUMN active_seconds INTEGER NOT NULL DEFAULT 0',
+      );
+      await database.execute(
+        'UPDATE daily_study_totals SET active_seconds = active_minutes * 60',
+      );
+    }
   }
 
   Future<void> _upgradeStudyDiscipline(DatabaseExecutor database) async {
@@ -359,6 +382,47 @@ class LocalDatabase {
       );
     });
   }
+
+  Future<void> addActiveStudySeconds({
+    required DateTime day,
+    required int seconds,
+  }) async {
+    if (seconds <= 0) return;
+    final db = await database;
+    final key = _dayKey(day);
+    final now = DateTime.now().millisecondsSinceEpoch;
+    await db.rawInsert(
+      '''
+      INSERT INTO daily_study_totals(day_key, active_seconds, active_minutes, updated_at)
+      VALUES(?, ?, 0, ?)
+      ON CONFLICT(day_key) DO UPDATE SET
+        active_seconds = daily_study_totals.active_seconds + excluded.active_seconds,
+        updated_at = excluded.updated_at
+      ''',
+      [key, seconds, now],
+    );
+    await db.rawUpdate(
+      'UPDATE daily_study_totals SET active_minutes = active_seconds / 60 WHERE day_key = ?',
+      [key],
+    );
+  }
+
+  Future<int> activeStudySecondsForDay(DateTime day) async {
+    final db = await database;
+    final rows = await db.query(
+      'daily_study_totals',
+      columns: ['active_seconds'],
+      where: 'day_key = ?',
+      whereArgs: [_dayKey(day)],
+      limit: 1,
+    );
+    return rows.isEmpty ? 0 : rows.first['active_seconds']! as int;
+  }
+
+  String _dayKey(DateTime date) =>
+      '${date.year.toString().padLeft(4, '0')}-'
+      '${date.month.toString().padLeft(2, '0')}-'
+      '${date.day.toString().padLeft(2, '0')}';
 
   Future<Map<String, Object?>> learnerProfile() async {
     final db = await database;
