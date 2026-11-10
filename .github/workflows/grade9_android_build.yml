@@ -42,6 +42,26 @@ jobs:
       - name: Generate Android platform scaffold
         run: flutter create --platforms=android --project-name grade9_offline_learning .
 
+      - name: Set Android compile SDK for plugin requirements
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          gradle = Path("android/app/build.gradle.kts")
+          if not gradle.exists():
+              raise SystemExit("Expected Android Gradle Kotlin DSL file was not generated")
+          source = gradle.read_text()
+          old = "compileSdk = flutter.compileSdkVersion"
+          if old not in source:
+              raise SystemExit("Could not locate generated compileSdk declaration")
+          gradle.write_text(source.replace(old, "compileSdk = 36", 1))
+          PY
+
+      - name: Generate launcher icon
+        run: |
+          python3 -m pip install --disable-pip-version-check Pillow
+          python3 tooling/generate_launcher_icon.py
+          dart run flutter_launcher_icons
+
       - name: Install dependencies
         run: flutter pub get
 
