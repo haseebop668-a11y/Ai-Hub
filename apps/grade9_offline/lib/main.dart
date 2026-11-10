@@ -5,6 +5,7 @@ import 'data/local_database.dart';
 import 'features/flashcards/flashcard_screens.dart';
 import 'features/library/pdf_library_page.dart';
 import 'features/tutor/today_tutor_page.dart';
+import 'features/tutor/active_study_timer_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -113,6 +114,15 @@ class _HomeScreenState extends State<HomeScreen> {
           ],
         ),
         actions: [
+          IconButton(
+            tooltip: 'Focused study timer',
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => const ActiveStudyTimerPage(),
+              ),
+            ),
+            icon: const Icon(Icons.timer_outlined),
+          ),
           IconButton(
             tooltip: 'Offline PDF library',
             onPressed: () => Navigator.of(context).push(
