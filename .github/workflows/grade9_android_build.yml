@@ -72,7 +72,7 @@ jobs:
           }
           """
           if 'plugins.withId("com.android.library")' not in source:
-              gradle.write_text(source.rstrip() + "\\n\\n" + block)
+              gradle.write_text(source.rstrip() + "\n\n" + block)
           PY
 
       - name: Install dependencies
