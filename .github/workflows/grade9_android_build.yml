@@ -56,6 +56,35 @@ jobs:
           gradle.write_text(source.replace(old, "compileSdk = 36", 1))
           PY
 
+      - name: Align Android plugin compile SDKs
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          gradle = Path("android/build.gradle.kts")
+          source = gradle.read_text()
+          block = """
+          // Keep Android library plugins aligned with the app compile SDK.
+          subprojects {
+              afterEvaluate {
+                  val androidExtension = extensions.findByName("android")
+                  if (androidExtension != null) {
+                      val setter = androidExtension.javaClass.methods.firstOrNull {
+                          it.name == "compileSdkVersion" &&
+                              it.parameterCount == 1 &&
+                              it.parameterTypes[0] == Int::class.javaPrimitiveType
+                      }
+                      if (setter == null) {
+                          throw GradleException("Could not find Android compileSdkVersion(int) setter for $name")
+                      }
+                      setter.invoke(androidExtension, 36)
+                  }
+              }
+          }
+          """
+          if "Keep Android library plugins aligned with the app compile SDK." not in source:
+              gradle.write_text(source.rstrip() + "\\n\\n" + block)
+          PY
+
       - name: Install dependencies
         run: flutter pub get
 
