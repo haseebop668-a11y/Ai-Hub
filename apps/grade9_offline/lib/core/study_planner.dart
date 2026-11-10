@@ -74,9 +74,66 @@ class StudyPlanner {
     int dueReviewCount = 0,
     int dueReviewMinutes = 0,
   }) {
-    final goal = dailyGoalMinutes.clamp(10, 120).toInt();
+    final goal = dailyGoalMinutes.clamp(10, 300).toInt();
     final tasks = <StudyTask>[];
     var remaining = goal;
+
+    if (goal > 50) {
+      final unfinished = units.where((unit) => !unit.isCompleted).toList()
+        ..sort((a, b) {
+          final priority = _priority(b, now).compareTo(_priority(a, now));
+          return priority != 0 ? priority : a.order.compareTo(b.order);
+        });
+      if (unfinished.isEmpty && dueReviewCount == 0) {
+        return const StudyPlan(
+          tasks: [],
+          totalMinutes: 0,
+          headline: 'Your study path is ready',
+          explanation: 'Import a verified Grade 9 study pack or add recall cards to begin.',
+        );
+      }
+      final primary = unfinished.isEmpty ? null : unfinished.first;
+      final secondary = unfinished.length > 1 ? unfinished[1] : primary;
+      final blocks = <StudyTask>[];
+      void addBlock(StudyTaskKind kind, String title, StudyUnit? unit, String reason) {
+        final minutes = math.min(50, remaining).toInt();
+        if (minutes <= 0) return;
+        blocks.add(StudyTask(
+          kind: kind,
+          title: title,
+          minutes: minutes,
+          unitId: unit?.id,
+          subjectId: unit?.subjectId,
+          reason: reason,
+        ));
+        remaining -= minutes;
+      }
+
+      if (dueReviewCount > 0) {
+        addBlock(StudyTaskKind.review, 'Spaced recall and memory review', null,
+            '$dueReviewCount items are due for spaced review');
+      } else {
+        addBlock(StudyTaskKind.learn, primary?.title ?? 'Core lesson', primary,
+            'Start with the highest-priority unfinished topic');
+      }
+      addBlock(StudyTaskKind.learn, secondary?.title ?? primary?.title ?? 'Guided examples',
+          secondary ?? primary, 'Build understanding with worked examples');
+      addBlock(StudyTaskKind.activeRecall, 'Closed-book active recall', primary,
+          'Explain the idea without looking at the source');
+      addBlock(StudyTaskKind.learn, 'Independent practice', secondary ?? primary,
+          'Practise the skill without step-by-step help');
+      addBlock(StudyTaskKind.activeRecall, 'Interleaved review and teach-back', secondary ?? primary,
+          'Retrieve an earlier idea and connect it to today’s topic');
+      addBlock(StudyTaskKind.miniTest, 'Daily mastery check', secondary ?? primary,
+          'Check understanding and identify what needs another pass');
+
+      return StudyPlan(
+        tasks: List.unmodifiable(blocks),
+        totalMinutes: goal - remaining,
+        headline: 'Your six-block study day is ready',
+        explanation: 'Six focused blocks are planned. Breaks are separate and never count toward active study time.',
+      );
+    }
 
     if (dueReviewCount > 0 && remaining >= 3) {
       final minutes = math.min(
