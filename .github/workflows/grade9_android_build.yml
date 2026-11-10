@@ -91,10 +91,10 @@ jobs:
               raise SystemExit(f"Pub package cache not found: {package_root}")
 
           patterns = [
-              (re.compile(r"(?m)^(\\s*compileSdkVersion\\s+)(?:flutter\\.compileSdkVersion|[0-9]+)"), r"\\g<1>36"),
-              (re.compile(r"(?m)^(\\s*compileSdkVersion\\s*=\\s*)(?:flutter\\.compileSdkVersion|[0-9]+)"), r"\\g<1>36"),
-              (re.compile(r"(?m)^(\\s*compileSdk\\s+)(?:flutter\\.compileSdkVersion|[0-9]+)"), r"\\g<1>36"),
-              (re.compile(r"(?m)^(\\s*compileSdk\\s*=\\s*)(?:flutter\\.compileSdkVersion|[0-9]+)"), r"\\g<1>36"),
+              (re.compile(r"(?m)^(\s*compileSdkVersion\s+)(?:flutter\.compileSdkVersion|[0-9]+)"), r"\g<1>36"),
+              (re.compile(r"(?m)^(\s*compileSdkVersion\s*=\s*)(?:flutter\.compileSdkVersion|[0-9]+)"), r"\g<1>36"),
+              (re.compile(r"(?m)^(\s*compileSdk\s+)(?:flutter\.compileSdkVersion|[0-9]+)"), r"\g<1>36"),
+              (re.compile(r"(?m)^(\s*compileSdk\s*=\s*)(?:flutter\.compileSdkVersion|[0-9]+)"), r"\g<1>36"),
           ]
           changed = []
           for gradle in package_root.glob("*/android/build.gradle*"):
@@ -108,10 +108,10 @@ jobs:
           picker = list(package_root.glob("file_picker-*/android/build.gradle*"))
           if not picker:
               raise SystemExit("file_picker Android Gradle file was not found in the package cache")
-          picker_text = "\\n".join(path.read_text() for path in picker)
-          if not any(re.search(r"compileSdk(?:Version)?\\s*(?:=\\s*)?36", picker_text) for _ in [0]):
+          picker_text = "\n".join(path.read_text() for path in picker)
+          if not any(re.search(r"compileSdk(?:Version)?\s*(?:=\s*)?36", picker_text) for _ in [0]):
               raise SystemExit("file_picker compile SDK was not raised to 36")
-          print("Patched Android plugin Gradle files:", *changed, sep="\\n")
+          print("Patched Android plugin Gradle files:", *changed, sep="\n")
           PY
 
       - name: Generate launcher icon
