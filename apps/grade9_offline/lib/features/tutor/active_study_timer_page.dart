@@ -66,10 +66,8 @@ class _ActiveStudyTimerPageState extends State<ActiveStudyTimerPage>
     _elapsedSeconds = _stopwatch.elapsed.inSeconds;
     _running = false;
     _idlePaused = dueToIdle;
-    if (!_idlePaused) {
-      _ticker?.cancel();
-      _ticker = null;
-    }
+    _ticker?.cancel();
+    _ticker = null;
     if (mounted) setState(() {});
   }
 
