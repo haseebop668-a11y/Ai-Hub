@@ -383,6 +383,40 @@ class LocalDatabase {
     });
   }
 
+  Future<void> saveStudySettings({
+    required int dailyGoalMinutes,
+    required int breakMinutes,
+    required int? startHour,
+    required int? startMinute,
+    required bool focusModeEnabled,
+  }) async {
+    if (dailyGoalMinutes < 30 || dailyGoalMinutes > 600) {
+      throw ArgumentError.value(dailyGoalMinutes, 'dailyGoalMinutes');
+    }
+    if (breakMinutes < 0 || breakMinutes > 60) {
+      throw ArgumentError.value(breakMinutes, 'breakMinutes');
+    }
+    if ((startHour == null) != (startMinute == null) ||
+        (startHour != null && (startHour < 0 || startHour > 23)) ||
+        (startMinute != null && (startMinute < 0 || startMinute > 59))) {
+      throw ArgumentError('Study start time is invalid.');
+    }
+    final db = await database;
+    await db.update(
+      'learner_profile',
+      {
+        'schedule_mode': 'fixed',
+        'weekly_rest_day': 7,
+        'daily_goal_minutes': dailyGoalMinutes,
+        'break_minutes': breakMinutes,
+        'study_start_hour': startHour,
+        'study_start_minute': startMinute,
+        'focus_mode_enabled': focusModeEnabled ? 1 : 0,
+      },
+      where: 'id = 1',
+    );
+  }
+
   Future<void> addActiveStudySeconds({
     required DateTime day,
     required int seconds,
