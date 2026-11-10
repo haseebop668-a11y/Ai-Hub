@@ -56,14 +56,14 @@ jobs:
           gradle.write_text(source.replace(old, "compileSdk = 36", 1))
           PY
 
+      - name: Install dependencies
+        run: flutter pub get
+
       - name: Generate launcher icon
         run: |
           python3 -m pip install --disable-pip-version-check Pillow
           python3 tooling/generate_launcher_icon.py
           dart run flutter_launcher_icons
-
-      - name: Install dependencies
-        run: flutter pub get
 
       - name: Format Dart sources
         run: dart format .
