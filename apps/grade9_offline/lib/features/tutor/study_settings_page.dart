@@ -144,7 +144,9 @@ class _StudySettingsPageState extends State<StudySettingsPage> {
                           items: const [0, 5, 10, 15, 20, 30].map((value) =>
                               DropdownMenuItem(value: value, child: Text('$value min'))).toList(),
                           onChanged: (value) {
-                            if (value != null) setState(() => _breakMinutes = value);
+                            if (value != null) {
+                              setState(() => _breakMinutes = value);
+                            }
                           },
                         ),
                       ),
